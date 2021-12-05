@@ -53,6 +53,39 @@ public:
             case '+': addToken(PLUS); break;
             case '*': addToken(MULT); break;
             case ';': addToken(SEMICOLON); break;
+            case '^': addToken(EXPONENT); break;
+            case '>': {
+                if (match('=')) {
+                    addToken(GREATER_EQUAL);
+                } else {
+                    addToken(GREATER);
+                }
+                break;
+            }
+            case '<': {
+                if (match('=')) {
+                    addToken(LESS_EQUAL);
+                } else {
+                    addToken(LESS);
+                }
+                break;
+            }
+            case '=': {
+                if (match('=')) {
+                    addToken(EQUAL_EQUAL);
+                } else {
+                    addToken(EQUAL);
+                }
+                break;
+            }
+            case '!': {
+                if (match('=')) {
+                    addToken(NOT_EQUAL);
+                } else {
+                    addToken(NOT);
+                }
+                break;
+            }
             // special characters
             case '/': {
                 // if the next char is also a /
