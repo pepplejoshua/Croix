@@ -8,8 +8,6 @@
 #ifndef TokenTypes_h
 #define TokenTypes_h
 
-#include <string>
-
 enum TokenType {
     // single character tokens
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,

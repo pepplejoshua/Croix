@@ -9,7 +9,8 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "TokenTypes.h"
+#include "Lexer.h"
+#include "ErrHandler.h"
 
 using namespace std;
 
@@ -24,19 +25,13 @@ string readAllLines(string path);
 // takes a file path, reads it's contents and runs it
 void runFile(string path);
 
-// takes a line that caused and error and reports a message
-void error(int line, string msg);
-
-// reports a msg about where in line causes an error
-void report(int line, string where, string msg);
-
 // takes source code as a string and runs it
 void run(string src);
 
 // runs the repl loop for croix
 void runPrompt();
 
-bool SOURCE_HAD_ERROR = false; // triggered when an error is reported
+ErrHandler CroixErrManager;
 
 int main(int argc, const char * argv[]) {
     if (hasCorrectArgCount(argc)) {
@@ -88,30 +83,20 @@ void runFile(string path) {
     cout << lines << endl;
     
     run(lines);
-    if (SOURCE_HAD_ERROR) exit(65); // incorrect input error
-}
-
-// takes a line that caused and error and reports a message
-void error(int line, string msg) {
-    report(line, "", msg);
-}
-
-// reports a msg about where in line causes an error
-void report(int line, string where, string msg) {
-    cout << "Err<{" << line << "}> -> " << where << ": " << msg << endl;
-    SOURCE_HAD_ERROR = true;
+    if (CroixErrManager.SOURCE_HAD_ERROR) exit(65); // incorrect input error
 }
 
 // takes source code as a string and runs it
 void run(string src) {
     // do nothing for now
-//    Lexer crxLex(src);
-//    vector < Token > tokens = crxLex.lexTokens();
+   Lexer crxLex(src, CroixErrManager);
+   vector < Token > tokens = crxLex.lexTokens();
     
     // print tokens to screen
-//    for (Token tok : tokens) {
-//        cout << tok.string() << endl;
-//    }
+    for (int i = 0; i < tokens.size(); ++i) {
+        Token tok = tokens[i];
+        cout << tok.String() << endl;
+    }
 }
 
 // runs the repl for interactive program
@@ -130,6 +115,6 @@ void runPrompt() {
             break;
         }
         run(line); // execute line
-        SOURCE_HAD_ERROR = false; // reset flag so it doesn't kill session for user
+        CroixErrManager.SOURCE_HAD_ERROR = false; // reset flag so it doesn't kill session for user
     }
 }
