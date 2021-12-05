@@ -40,7 +40,7 @@ int main(int argc, const char * argv[]) {
         else if (argc == 1) // no path provided
             runPrompt();
     } else {
-        return 64; // exit with an error
+        return 64; // exit with an usage error
     }
     
     return 0;
