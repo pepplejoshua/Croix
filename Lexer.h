@@ -14,6 +14,7 @@
 #include "TokenTypes.h"
 #include "Token.h"
 #include "ErrHandler.h"
+#include <map>
 
 using namespace std;
 
@@ -24,6 +25,49 @@ public:
         start = current = 0;
         line = 1;
         eReporter = h;
+
+        const string sKeywords[] = {
+            "and",
+            "class",
+            "else",
+            "false",
+            "for",
+            "fun",
+            "if",
+            "nil",
+            "or",
+            "print",
+            "return",
+            "super",
+            "this",
+            "true",
+            "var",
+            "while"
+        };
+
+        TokenType tKeywords[] = {
+            AND,
+            CLASS,
+            ELSE,
+            FALSE_,
+            FOR,
+            FUN,
+            IF,
+            NIL,
+            OR,
+            PRINT,
+            RETURN,
+            SUPER,
+            THIS,
+            TRUE_,
+            VAR,
+            WHILE
+        };
+        
+        int length = sizeof(sKeywords)/sizeof(sKeywords[0]);
+        for (int i = 0; i < length; ++i) {
+            keywords.insert(pair < string, TokenType >(sKeywords[i], tKeywords[i]));
+        }
     }
 
     bool isAtEnd() {
@@ -106,11 +150,36 @@ public:
             default: {
                 if (isdigit(c))
                     lexNumber();
+                else if (isAlpha(c))
+                    lexIdentifierOrKeyword();
                 else
                     eReporter.error(line, "Unexpected character -> " + string(1, c)); 
                 break;
             }
         }
+    }
+
+    bool isAlpha(char c) {
+        if (isalpha(c) || c == '_')
+            return true;
+        return false;
+    }
+
+    void lexIdentifierOrKeyword() {
+        while (isalnum(peek())) advanceCurrent();
+
+        string text = source.substr(start, current-start);
+        map < string, TokenType >::iterator it;
+        it = keywords.find(text);
+
+        TokenType type;
+        // it is actually a keyword
+        if (it != keywords.end()) {
+            type = it->second;
+        } else { // it is not a keyword, but an identifier
+            type = IDENTIFIER;
+        }
+        addToken(type);
     }
 
     void lexNumber() {
@@ -209,5 +278,6 @@ private:
     string source;
     vector < Token > tokens;
     ErrHandler eReporter;
+    map < string, TokenType > keywords;
 };
 #endif
