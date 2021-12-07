@@ -9,12 +9,12 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include "Lexer.h"
-#include "ErrHandler.h"
-#include "AST/Expr.h"
-#include "TokenTypes.h"
-#include "Token.h"
-#include "AstPrinter.h"
+#include "Lexer/Lexer.h"
+#include "Helpers/ErrHandler.h"
+#include "AST/VisitPattern.h"
+#include "AST/TokenTypes.h"
+#include "AST/Token.h"
+#include "AST/AstPrinter.h"
 
 using namespace std;
 
@@ -47,25 +47,24 @@ int main(int argc, const char * argv[]) {
     //     return 64; // exit with an usage error
     // }
     
-    Program *p = new Program(
-        new Binary(
-            new Number(34),
-            Token (PLUS, "+", 1),
-            new Unary(
-                Token (MINUS, "-", 1),
-                new Grouping(
-                    new Binary(
-                        new Number(2),
-                        Token (EXPONENT, "^", 1),
-                        new Number(3)
+    // 34 + (- (2 ^ 3))
+    Expr *e = new Binary(
+                new Number(34),
+                Token (PLUS, "+", 1),
+                new Unary(
+                    Token (MINUS, "-", 1),
+                    new Grouping(
+                        new Binary(
+                            new Number(2),
+                            Token (EXPONENT, "^", 1),
+                            new Number(3)
+                        )
                     )
                 )
-            )
-        )
-    );
+            );
 
     AstPrinter pr;
-    cout << pr.print(p) << endl;
+    cout << pr.print(e) << endl;
 
     return 0;
 }

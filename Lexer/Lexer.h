@@ -11,9 +11,9 @@
 #include <vector>
 #include <string> 
 #include <stdexcept>
-#include "TokenTypes.h"
-#include "Token.h"
-#include "ErrHandler.h"
+#include "../AST/TokenTypes.h"
+#include "../AST/Token.h"
+#include "../Helpers/ErrHandler.h"
 #include <map>
 
 using namespace std;

@@ -151,14 +151,3 @@ types = [
 ]
 
 defineAst(dest, "Expr", types)
-
-
-# new plan for generation
-# generate VisitPattern.h which contains:
-# - Visitable<V1>, where V1 is the Visitor type.
-# add more typenames to the definition for more visitor types
-# contains 
-#   * void accept(V1)
-#
-#
-# - Visitor
