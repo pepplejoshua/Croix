@@ -11,7 +11,7 @@
 #include <vector>
 #include "Lexer/Lexer.h"
 #include "Helpers/ErrHandler.h"
-#include "AST/VisitPattern.h"
+#include "AST/Expr.h"
 #include "AST/TokenTypes.h"
 #include "AST/Token.h"
 #include "AST/AstPrinter.h"
