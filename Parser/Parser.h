@@ -184,10 +184,10 @@ private:
     Expr* term() {
         Expr* e = factor();
 
-        vector < TokenType > ops(
+        vector < TokenType > ops {
             MINUS,
             PLUS
-        );  
+        };  
 
         while (matches(ops)) {
             Token op = previous();
@@ -220,6 +220,31 @@ private:
             NOT,
             MINUS
         };
+
+        // string msg = "Binary operator "
+        // report binary operators error
+        switch (peek().type) {
+            case PLUS:
+            case NOT_EQUAL:
+            case EQUAL_EQUAL:
+            case GREATER:
+            case LESS:
+            case GREATER_EQUAL:
+            case LESS_EQUAL:
+            case SLASH:
+            case MULT:
+            case EXPONENT: {
+                // consume()
+                Token errOp = peek();
+                advanceIndex();
+                unary(); // parse and discard rest of operand
+                throw error(errOp, "Misused Binary operator " + errOp.lexeme + ".");
+            }
+            default: {
+                cout << "Saw " << peek().lexeme << endl;
+                break;
+            }
+        }
 
         if (matches(ops)) {
             Token op = previous();
@@ -268,7 +293,7 @@ private:
                 break;
             }
             default: {
-                throw error(peek(), "Expected expression.");
+                throw error(peek(), "Expected expression, got " + peek().lexeme + ".");
             }
 
         }
