@@ -54,11 +54,11 @@ public:
     }
 
     void visitStringExpr(String* e) {
-        content += e->value;
+        content += "'" + e->value + "'";
     }
 
     void visitNilExpr(Nil* e) {
-        content += "NIL";
+        content += "nil";
     }
 
 

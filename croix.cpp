@@ -15,6 +15,7 @@
 #include "AST/TokenTypes.h"
 #include "AST/Token.h"
 #include "AST/AstPrinter.h"
+#include "Parser/Parser.h"
 
 using namespace std;
 
@@ -39,35 +40,14 @@ ErrHandler CroixErrManager;
 
 int main(int argc, const char * argv[]) {
     // 34 + (- (2 ^ 3))
-    Expr *e = new Binary(
-                new Number(34),
-                Token (PLUS, "+", 1),
-                new Unary(
-                    Token (MINUS, "-", 1),
-                    new Grouping(
-                        new Binary(
-                            new Number(2),
-                            Token (EXPONENT, "^", 1),
-                            new Number(3)
-                        )
-                    )
-                )
-            );
-
-    Expr *d = new Binary(
-                new Unary(
-                    Token (MINUS, "-", 1),
-                    new Number(123)
-                ),
-                Token (MULT, "*", 1),
-                new Grouping(
-                    new Number(45.67)
-                )
-            );
-    AstPrinter pr;
-    cout << pr.print(e) << endl;
-    cout << pr.print(d) << endl;
-
+    if (hasCorrectArgCount(argc)) {
+        if (argc == 2) // user provided a script
+            runFile(argv[1]);
+        else if (argc == 1) // no path provided
+            runPrompt();
+    } else {
+        return 64; // exit with an usage error
+    }
     return 0;
 }
 
@@ -113,12 +93,16 @@ void runFile(string path) {
 void run(string src) {
     // do nothing for now
    Lexer crxLex(src, CroixErrManager);
-   vector < Token > tokens = crxLex.lexTokens();
+   vector < Token > tokens = crxLex.lexTokens(); 
+
+   Parser p(tokens, CroixErrManager);
+   Expr *e = p.parse();
+
+    if (CroixErrManager.SOURCE_HAD_ERROR) return;
     
-    // print tokens to screen
-    for (int i = 0; i < tokens.size(); ++i) {
-        Token tok = tokens[i];
-        cout << tok.String() << endl;
+    if (e) {
+        AstPrinter pr;
+        cout << pr.print(e) << endl;
     }
 }
 
@@ -128,7 +112,7 @@ void runPrompt() {
     
     string TERMINATE = ".q";
     while (true) { // running loop
-        cout << "{crx}:: ";
+        cout << "\n{crx}:: ";
         string line;
         getline(cin, line);
         if (line == "")

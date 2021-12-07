@@ -195,17 +195,19 @@ public:
             while (isdigit(peek())) advanceCurrent();
         }
 
-        // string numSlice = source.substr(start, current-start);
-        // double d = 0;
-        // try {
-        //     d = stod(numSlice);
-        // } catch (const invalid_argument&) {
-        //     eReporter.error(line, numSlice + " is an invalid number.");
-        //     return;
-        // } catch (const out_of_range&) {
-        //     eReporter.error(line, numSlice + " is out of range of a double.");
-        //     return;
-        // }
+        // make sure we can convert this to a valid
+        // double later
+        string numSlice = source.substr(start, current-start);
+        double d = 0;
+        try {
+            d = stod(numSlice);
+        } catch (const invalid_argument&) {
+            eReporter.error(line, numSlice + " is an invalid number.");
+            return;
+        } catch (const out_of_range&) {
+            eReporter.error(line, numSlice + " is out of range of a double.");
+            return;
+        }
         addToken(NUMBER);
     }
 
@@ -221,10 +223,7 @@ public:
         }
 
         advanceCurrent(); // skip over the closing "
-        string str = source.substr(start+1, current-start-1);
         addToken(STRING);
-        // might have to dereference void pointer
-        // as char array pointer
     }
 
     // unlike advance, this doesn't look at current-1
@@ -269,7 +268,12 @@ public:
 
     // adds a token to vector
     void addToken(TokenType t) {
-        string snippet = source.substr(start, current-start);
+        string snippet;
+        // skip the "" from both directions
+        if (t == STRING)
+            snippet = source.substr(start+1, current-start-2);
+        else
+            snippet = source.substr(start, current-start);
         tokens.push_back(Token(t, snippet, line));
     }
 

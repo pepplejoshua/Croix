@@ -29,7 +29,6 @@ public:
         return lexeme;
     }
 
-private:
     TokenType type;
     std::string lexeme;
     int line;
