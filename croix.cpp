@@ -11,6 +11,10 @@
 #include <vector>
 #include "Lexer.h"
 #include "ErrHandler.h"
+#include "AST/Expr.h"
+#include "TokenTypes.h"
+#include "Token.h"
+#include "AstPrinter.h"
 
 using namespace std;
 
@@ -34,15 +38,35 @@ void runPrompt();
 ErrHandler CroixErrManager;
 
 int main(int argc, const char * argv[]) {
-    if (hasCorrectArgCount(argc)) {
-        if (argc == 2) // user provided a script
-            runFile(argv[1]);
-        else if (argc == 1) // no path provided
-            runPrompt();
-    } else {
-        return 64; // exit with an usage error
-    }
+    // if (hasCorrectArgCount(argc)) {
+    //     if (argc == 2) // user provided a script
+    //         runFile(argv[1]);
+    //     else if (argc == 1) // no path provided
+    //         runPrompt();
+    // } else {
+    //     return 64; // exit with an usage error
+    // }
     
+    Program *p = new Program(
+        new Binary(
+            new Number(34),
+            Token (PLUS, "+", 1),
+            new Unary(
+                Token (MINUS, "-", 1),
+                new Grouping(
+                    new Binary(
+                        new Number(2),
+                        Token (EXPONENT, "^", 1),
+                        new Number(3)
+                    )
+                )
+            )
+        )
+    );
+
+    AstPrinter pr;
+    cout << pr.print(p) << endl;
+
     return 0;
 }
 

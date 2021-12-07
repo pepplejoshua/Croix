@@ -19,6 +19,12 @@ public:
         line = ln;
     }
 
+    Token() {
+        type = EOF_;
+        lexeme = "";
+        line = 0;
+    }
+
     std::string String() {
         return lexeme;
     }

@@ -40,24 +40,60 @@ def defineAst(outDir: str, baseClass: str, types: list[str]):
 
     Cpp.insert("#include <iostream>")
     Cpp.insert("#include <string>")
+    Cpp.insert('#include "../Token.h"')
     Cpp.insert()
     Cpp.insert("using namespace std;")
     
     Cpp.insert()
+    retType = "RValue"
+    Cpp.insert(f"template <typename {retType}>")
     Cpp.insert(f"class {baseClass} " + "{")
-
+    Cpp.insert("public:")
+    
+    Cpp.indent()
+    Cpp.insert("class Visitor;")
+    Cpp.dedent()
+    
     for t in types:
         Cpp.insert()
         className = t.split(':')[0].strip()
         fields = t.split(':')[1].strip()
-        defineType(Cpp, baseClass, className, fields)
+        defineType(Cpp, baseClass, className, fields, retType)
+    
+    # define visitor class
+    defineVisitor(Cpp, baseClass, types, retType)
+
+    Cpp.insert()
+    Cpp.indent()
+    Cpp.insert(f"virtual {retType} accept(Expr < {retType} >::Visitor* visitor) = 0;")
+    Cpp.dedent()
     Cpp.insert("};")
     Cpp.insert()
     Cpp.insert(f"#endif /* {baseClass}_h */")
     
-    print(Cpp)
+    with open(outPath, 'w+') as astFile:
+        astFile.write(str(Cpp))
+    # print(Cpp)
 
-def defineType(CA: CodeAssembler, baseClass: str, className: str, fieldList: str):
+def defineVisitor(Cpp: CodeAssembler, baseClass: str, types: list[str], retVal: str):
+    Cpp.insert()
+    Cpp.indent()
+    
+    Cpp.insert("class Visitor {")
+
+    Cpp.insert("public:")
+    Cpp.indent()
+    for t in types:
+        # create 1 function for each type of object to be visited
+        typeName = t.split(":")[0].strip()
+        fnDef = f"virtual {retVal} visit{typeName}{baseClass}("
+        fnDef += f'{baseClass} < {retVal} >::{typeName} {baseClass.lower()}) = 0;'
+        Cpp.insert(fnDef)
+    Cpp.dedent()
+    Cpp.insert("};")
+    Cpp.dedent()
+
+def defineType(CA: CodeAssembler, baseClass: str, className: str, fieldList: str, retType: str):
     # start of new class 
     CA.indent()
     CA.insert(f"class {className} : public {baseClass} " + "{")
@@ -66,21 +102,29 @@ def defineType(CA: CodeAssembler, baseClass: str, className: str, fieldList: str
     # indent into definition of class
     CA.indent()
     # constructor
-    CA.insert(f"{className} ({fieldList}) " + "{")
+    CA.insert(f"{className}({fieldList}) " + "{")
     # constructor body
     CA.indent()
     fields = fieldList.split(', ')
     for f in fields:
-        varName = f.split(" ")[1]
-        CA.insert(f"this.{varName} = {varName};")
+        if ">* " in f:
+            varName = f.split(">* ")[1]
+        else:
+            varName = f.split(" ")[1]
+        CA.insert(f"this->{varName} = {varName};")
     CA.dedent()
 
+    CA.insert("}")
+
+    CA.insert()
+    CA.insert(f"{retType} accept(Expr < {retType} >::Visitor* visitor) " + "{")
+    CA.indent()
+    CA.insert(f"return visitor->visit{className}{baseClass}(*this);")
+    CA.dedent()
     CA.insert("}")
     CA.dedent()
 
     CA.insert()
-    CA.insert("private:")
-    # write private members
     CA.indent()
     for f in fields:
         CA.insert(f+';')
@@ -96,12 +140,25 @@ if (argc != 2):
 
 dest = sys.argv[1]
 
-types = [
-    "Binary    :  Expr left, Token operator, Expr right",
-    "Grouping  :  Expr expr",
+types = [ 
+    "Binary    :  Expr < RValue >* left, Token op, Expr < RValue >* right",
+    "Unary     :  Token op, Expr < RValue >* right",
+    "Grouping  :  Expr < RValue >* expr",
     "Boolean   :  bool value",
     "Number    :  double value",
-    "String    :  string value"
+    "String    :  string value",
+    # "Henok     :  int age, string hairColor, string top, string bottom"
 ]
 
 defineAst(dest, "Expr", types)
+
+
+# new plan for generation
+# generate VisitPattern.h which contains:
+# - Visitable<V1>, where V1 is the Visitor type.
+# add more typenames to the definition for more visitor types
+# contains 
+#   * void accept(V1)
+#
+#
+# - Visitor
