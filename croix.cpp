@@ -38,15 +38,6 @@ void runPrompt();
 ErrHandler CroixErrManager;
 
 int main(int argc, const char * argv[]) {
-    // if (hasCorrectArgCount(argc)) {
-    //     if (argc == 2) // user provided a script
-    //         runFile(argv[1]);
-    //     else if (argc == 1) // no path provided
-    //         runPrompt();
-    // } else {
-    //     return 64; // exit with an usage error
-    // }
-    
     // 34 + (- (2 ^ 3))
     Expr *e = new Binary(
                 new Number(34),
@@ -63,8 +54,19 @@ int main(int argc, const char * argv[]) {
                 )
             );
 
+    Expr *d = new Binary(
+                new Unary(
+                    Token (MINUS, "-", 1),
+                    new Number(123)
+                ),
+                Token (MULT, "*", 1),
+                new Grouping(
+                    new Number(45.67)
+                )
+            );
     AstPrinter pr;
     cout << pr.print(e) << endl;
+    cout << pr.print(d) << endl;
 
     return 0;
 }

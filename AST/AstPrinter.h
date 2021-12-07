@@ -4,6 +4,7 @@
 #include "Expr.h"
 #include <string>
 #include <vector>
+#include <math.h>
 
 using namespace std;
 
@@ -15,7 +16,9 @@ public:
 
     string print(Expr* e) {
         e->accept(this);
-        return content;
+        string v = content;
+        content = "";
+        return v;
     }  
 
     void visitBinaryExpr(Binary* e) {
@@ -43,11 +46,19 @@ public:
 
     void visitNumberExpr(Number* e) {
         double n = e->value;
-        content += to_string(n);
+
+        if (floor(n) != n) // we have a decimal part
+            content += to_string(n);
+        else
+            content += to_string((int) n);
     }
 
     void visitStringExpr(String* e) {
         content += e->value;
+    }
+
+    void visitNilExpr(Nil* e) {
+        content += "NIL";
     }
 
 

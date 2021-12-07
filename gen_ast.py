@@ -11,6 +11,9 @@ class CodeAssembler:
         line = (ca.tabSize * " ") + line + "\n"
         ca.body.append(line);
 
+    def unaddLastLine(ca):
+        ca.body = ca.body[0:len(ca.body)-1]
+
     def dedent(ca):
         if (ca.tabSize > 0):
             ca.tabSize -= ca.defTabSize
@@ -80,7 +83,7 @@ def defineBaseClass(Cpp: CodeAssembler, baseClass: str):
     Cpp.insert(f"class {baseClass} : public Visitable<ExprVisitor> " + "{")
     Cpp.insert("};")
 
-def defineAst(outDir: str, baseClass: str, types: list[str]):
+def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
     outPath = "./" + outDir + '/' + baseClass +'.h'
     # outPath = "./" + outDir + '/VisitorPattern.h'
 
@@ -96,7 +99,8 @@ def defineAst(outDir: str, baseClass: str, types: list[str]):
         "Grouping",
         "Boolean",
         "Number",
-        "String"
+        "String",
+        "Nil"
     ]
     forwardDeclareClasses(Cpp, classes)
 
@@ -126,8 +130,9 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
     # constructor body
     fields = fieldList.split(', ')
     for f in fields:
-        varName = f.split(" ")[1]
-        Cpp.indentInsertDedent(f"this->{varName} = {varName};")
+        if f != '':
+            varName = f.split(" ")[1]
+            Cpp.indentInsertDedent(f"this->{varName} = {varName};")
 
     Cpp.insert("}")
 
@@ -138,8 +143,15 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
     Cpp.dedent()
 
     Cpp.insert()
+    UNNEEDEDSPACE = False
     for f in fields:
-        Cpp.indentInsertDedent(f+';')
+        if f != '':
+            Cpp.indentInsertDedent(f+';')
+        else:
+            UNNEEDEDSPACE = True
+    if UNNEEDEDSPACE:
+        Cpp.unaddLastLine()
+
     Cpp.insert("};")
     Cpp.dedent()
     
@@ -158,7 +170,8 @@ types = [
     "Boolean   :  bool value",
     "Number    :  double value",
     "String    :  string value",
+    "Nil       :"
     # "Henok     :  int age, string hairColor, string top, string bottom"
 ]
 
-defineAst(dest, "Expr", types)
+generateExprHeaderForTypes(dest, "Expr", types)

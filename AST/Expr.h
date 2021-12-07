@@ -27,6 +27,7 @@ class Grouping;
 class Boolean;
 class Number;
 class String;
+class Nil;
 
 // class to be inherited by classes that intend to visit
 class ExprVisitor {
@@ -37,6 +38,7 @@ public:
     virtual void visitBooleanExpr(Boolean*) = 0;
     virtual void visitNumberExpr(Number*) = 0;
     virtual void visitStringExpr(String*) = 0;
+    virtual void visitNilExpr(Nil*) = 0;
 };
 
 // anything that is an ExprVisitor can visit this class
@@ -125,4 +127,14 @@ public:
     }
 
     string value;
+};
+
+class Nil : public Expr {
+public:
+    Nil() {
+    }
+    
+    void accept(ExprVisitor* ev) {
+        ev->visitNilExpr(this);
+    }
 };
