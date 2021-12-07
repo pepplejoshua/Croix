@@ -97,6 +97,8 @@ public:
             case '+': addToken(PLUS); break;
             case '*': addToken(MULT); break;
             case ';': addToken(SEMICOLON); break;
+            case ':': addToken(COLON); break;
+            case '?': addToken(QUESTION_MARK); break;
             case '^': addToken(EXPONENT); break;
             case '>': {
                 if (match('=')) {

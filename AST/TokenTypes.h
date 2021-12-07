@@ -12,6 +12,9 @@ enum TokenType {
     LEFT_PAREN, RIGHT_PAREN, LEFT_BRACE, RIGHT_BRACE,
     COMMA, DOT, MINUS, PLUS, SEMICOLON, SLASH, MULT, EXPONENT,
     
+    // for ternary operator
+    COLON, QUESTION_MARK,
+
     // one or more tokens
     NOT, NOT_EQUAL, EQUAL, EQUAL_EQUAL, GREATER,
     GREATER_EQUAL, LESS, LESS_EQUAL,

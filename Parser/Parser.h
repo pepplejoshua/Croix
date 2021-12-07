@@ -98,7 +98,49 @@ private:
     // PARSE HIERARCHY
     // expression -> equality
     Expr* expression() {
-        return equality();
+        return ternary();
+    }
+
+    // potential solution for ternary problem
+    // use the comma solution, but differently
+    // a ? b : c becomes:
+    // Binary("?", a, Binary(":", b, c))
+    Expr* ternary() {
+        Expr* e = comma();
+
+        // we have ternary expr
+        if (match(QUESTION_MARK)) {
+            Token qm = previous();
+            Expr *m = ternary();
+
+            Token col = consume(COLON, "Expected ':' in Ternary expression.");
+            Expr *r = ternary();
+            return new Binary(
+                e, 
+                qm,
+                new Binary(
+                    m,
+                    col,
+                    r
+                )
+            );
+        }
+
+        return e;
+    }
+
+    // read 1 expr or more separated by ,
+    Expr* comma() {
+        Expr *e = equality();
+
+        // it is equally a binary operator
+        while (match(COMMA)) {
+            Token op = previous();
+            Expr *r = equality();
+            e = new Binary(e, op, r);
+        }
+
+        return e;
     }
 
     // equality -> comparison [ ("!=", "==") comparision ]* 
