@@ -5,8 +5,7 @@
 //  Created by Joshua Pepple on 2021-12-04.
 //
 
-#ifndef TokenTypes_h
-#define TokenTypes_h
+#pragma once
 
 enum TokenType {
     // single character tokens
@@ -26,5 +25,3 @@ enum TokenType {
     
     EOF_
 };
-
-#endif /* TokenTypes_h */
