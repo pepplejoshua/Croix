@@ -229,8 +229,10 @@ public:
                 }
                 break;
             }
-            default: {
-                return NULL;
+            case COMMA: {
+                eval(e->left);
+                return eval(e->right);
+                break;
             }
             case QUESTION_MARK: {
                 bool chooseL = isTruthy(l);
@@ -242,6 +244,10 @@ public:
                 } else {
                     return eval(b->right);
                 }
+                break;
+            }
+            default: {
+                return NULL;
             }
         }
     }  
