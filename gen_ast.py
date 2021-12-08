@@ -49,15 +49,40 @@ def addTopOfFile(Cpp: CodeAssembler, baseClass: str):
     Cpp.insert()
     Cpp.insert("using namespace std;")
 
-def defineVisitableGeneric(Cpp: CodeAssembler):
+def defineVisitableGeneric(Cpp: CodeAssembler, pairCount: int):
     Cpp.insert()
     Cpp.insert("// class to be inherited by abstract base class")
     Cpp.insert("// to allow the template defined types visit this class")
-    visitorTag = "Visitor"
-    Cpp.insert(f"template <typename {visitorTag}>")
+    Cpp.insert("// it is visited by V1 and returns R1")
+    Cpp.insert("// it is visited by V2 and returns R2")
+    
+    # use pair count to generate the appropriate pair of Visitor
+    # and VisitorReturnVal
+    # so each Vistor is next to its Return value in the template
+    tStr = "template < "
+    acceptFns = []
+    for i in range(1, pairCount+1):
+        # we are now past the first one, so we can add newline
+        # to tStr
+        vTag = "V" + str(i)
+        rTag = "R" + str(i)
+        v = "typename " + vTag
+        r = "typename " + rTag
+        tStr += v + ', ' + r
+        fn = f"virtual {rTag} accept({vTag}) = 0;"
+        acceptFns.append(fn)
+
+        if i+1 != pairCount + 1:
+            tStr += ', '
+
+    # replace last comma with > to close template 
+    tStr = tStr[0:len(tStr)] + " >"
+    Cpp.insert(tStr)
     Cpp.insert("class Visitable {")
     Cpp.insert("public:")
-    Cpp.indentInsertDedent(f"virtual void accept({visitorTag}*) = 0;")
+    
+    for fn in acceptFns:
+        Cpp.indentInsertDedent(fn)
     Cpp.insert("};")
 
 def forwardDeclareClasses(Cpp: CodeAssembler, classes: list[str]):
@@ -69,29 +94,45 @@ def forwardDeclareClasses(Cpp: CodeAssembler, classes: list[str]):
 def defineExprVisitor(Cpp: CodeAssembler, classes: list[str], baseClass: str):
     Cpp.insert()
     Cpp.insert("// class to be inherited by classes that intend to visit")
+    rTag = "ReturnValue"
+    Cpp.insert(f"template < typename {rTag} >")
     Cpp.insert("class ExprVisitor {")
     Cpp.insert("public:")
     
     for cl in classes:
-        ln = f"virtual void visit{cl}{baseClass}({cl}*) = 0;"
+        ln = f"virtual {rTag} visit{cl}{baseClass}({cl}*) = 0;"
         Cpp.indentInsertDedent(ln)
     Cpp.insert("};")
 
 def defineBaseClass(Cpp: CodeAssembler, baseClass: str):
     Cpp.insert()
     Cpp.insert("// anything that is an ExprVisitor can visit this class")
-    Cpp.insert(f"class {baseClass} : public Visitable<ExprVisitor> " + "{")
+
+    # build the Visitable inheritance statement:
+    returns = ["string", f"{baseClass} *"]
+
+    inher = "public Visitable < "
+
+    for i in range(len(returns)):
+        r = returns[i]
+        inher += f"ExprVisitor < {r} > *, {r}"
+
+        if i+1 != len(returns):
+            inher += ', '
+    inher += " >"
+
+    Cpp.insert(f"class {baseClass} : {inher} " + "{")
+    Cpp.insert("public:")
+    Cpp.indentInsertDedent("virtual char type() const = 0;")
     Cpp.insert("};")
 
 def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
     outPath = "./" + outDir + '/' + baseClass +'.h'
-    # outPath = "./" + outDir + '/VisitorPattern.h'
 
     print("writing to", outPath)
     Cpp = CodeAssembler()
 
     addTopOfFile(Cpp, baseClass)    
-    defineVisitableGeneric(Cpp)
 
     classes = [
         "Binary",
@@ -104,8 +145,10 @@ def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
         # "Henok",
         # "Chidera"
     ]
+
     forwardDeclareClasses(Cpp, classes)
 
+    defineVisitableGeneric(Cpp, 2)
     defineExprVisitor(Cpp, classes, baseClass)
 
     defineBaseClass(Cpp, baseClass)
@@ -138,9 +181,31 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
 
     Cpp.insert("}")
 
+    # generate necessary accept functions
+    
+    returns = ["string", f"{baseClass}*"]
+    for r in returns:
+        Cpp.insert()
+        fnDef = f"{r} accept(ExprVisitor< {r} >* ev) " + "{"
+        Cpp.insert(fnDef)
+        Cpp.indentInsertDedent(f"return ev->visit{className}{baseClass}(this);")
+        Cpp.insert("}")
+    
     Cpp.insert()
-    Cpp.insert("void accept(ExprVisitor* ev) {")
-    Cpp.indentInsertDedent(f"ev->visit{className}{baseClass}(this);")
+    Cpp.insert("char type() const {")
+    mp = {
+        "Binary" : 'b',
+        "Unary": 'U',
+        "Grouping": 'G',
+        "Boolean": 'B',
+        "Number": 'N',
+        "String": 's'
+    }
+    tag = mp.get(className, None)
+    if tag:
+        Cpp.indentInsertDedent(f"return '{tag}';")
+    else:
+        Cpp.indentInsertDedent("return \'\\0\';")
     Cpp.insert("}")
     Cpp.dedent()
 
@@ -151,7 +216,8 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
             Cpp.indentInsertDedent(f+';')
         else:
             UNNEEDEDSPACE = True
-    if UNNEEDEDSPACE:
+            break
+    if UNNEEDEDSPACE: # used Nil to keep formatting nice
         Cpp.unaddLastLine()
 
     Cpp.insert("};")
@@ -165,16 +231,18 @@ if (argc != 2):
 
 dest = sys.argv[1]
 
+baseClass = "Expr"
+
 types = [ 
-    "Binary    :  Expr* left, Token op, Expr* right",
-    "Unary     :  Token op, Expr* right",
-    "Grouping  :  Expr* expr",
-    "Boolean   :  bool value",
-    "Number    :  double value",
-    "String    :  string value",
-    "Nil       :"
+    f"Binary    :  {baseClass}* left, Token op, {baseClass}* right",
+    f"Unary     :  Token op, {baseClass}* right",
+    f"Grouping  :  {baseClass}* expr",
+    f"Boolean   :  bool value",
+    f"Number    :  double value",
+    f"String    :  string value",
+    f"Nil       :"
     # "Henok     :  int age, string hairColor, string top, string bottom",
     # "Chidera   :  double a, int b, string c, char d, long e"
 ]
 
-generateExprHeaderForTypes(dest, "Test", types)
+generateExprHeaderForTypes(dest, baseClass, types)
