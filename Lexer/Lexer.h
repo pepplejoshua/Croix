@@ -20,7 +20,7 @@ using namespace std;
 
 class Lexer {
 public:
-    Lexer(string src, ErrHandler h) {
+    Lexer(string src, ErrHandler* h) {
         source = src;
         start = current = 0;
         line = 1;
@@ -155,7 +155,7 @@ public:
                 else if (isAlpha(c))
                     lexIdentifierOrKeyword();
                 else
-                    eReporter.error(line, "Unexpected character -> " + string(1, c)); 
+                    eReporter->error(line, "Unexpected character -> " + string(1, c)); 
                 break;
             }
         }
@@ -204,10 +204,10 @@ public:
         try {
             d = stod(numSlice);
         } catch (const invalid_argument&) {
-            eReporter.error(line, numSlice + " is an invalid number.");
+            eReporter->error(line, numSlice + " is an invalid number.");
             return;
         } catch (const out_of_range&) {
-            eReporter.error(line, numSlice + " is out of range of a double.");
+            eReporter->error(line, numSlice + " is out of range of a double.");
             return;
         }
         addToken(NUMBER);
@@ -220,7 +220,7 @@ public:
         }
 
         if (isAtEnd()) {
-            eReporter.error(line, "Unterminated string.");
+            eReporter->error(line, "Unterminated string.");
             return;
         }
 
@@ -283,7 +283,7 @@ private:
     int start, current, line;
     string source;
     vector < Token > tokens;
-    ErrHandler eReporter;
+    ErrHandler* eReporter;
     map < string, TokenType > keywords;
 };
 #endif

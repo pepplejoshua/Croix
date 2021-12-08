@@ -13,14 +13,6 @@
 
 using namespace std;
 
-// class to be inherited by abstract base class
-// to allow the template defined types visit this class
-template <typename Visitor>
-class Visitable {
-public:
-    virtual void accept(Visitor*) = 0;
-};
-
 class Binary;
 class Unary;
 class Grouping;
@@ -29,20 +21,34 @@ class Number;
 class String;
 class Nil;
 
+// class to be inherited by abstract base class
+// to allow the template defined types visit this class
+// it is visited by V1 and returns R1
+// it is visited by V2 and returns R2
+template <typename V1, typename R1, typename V2, typename R2>
+class Visitable {
+public:
+    virtual R1 accept(V1) = 0;
+    virtual R2 accept(V2) = 0;
+};
+
 // class to be inherited by classes that intend to visit
+template <typename ReturnValue>
 class ExprVisitor {
 public:
-    virtual void visitBinaryExpr(Binary*) = 0;
-    virtual void visitUnaryExpr(Unary*) = 0;
-    virtual void visitGroupingExpr(Grouping*) = 0;
-    virtual void visitBooleanExpr(Boolean*) = 0;
-    virtual void visitNumberExpr(Number*) = 0;
-    virtual void visitStringExpr(String*) = 0;
-    virtual void visitNilExpr(Nil*) = 0;
+    virtual ReturnValue visitBinaryExpr(Binary*) = 0;
+    virtual ReturnValue visitUnaryExpr(Unary*) = 0;
+    virtual ReturnValue visitGroupingExpr(Grouping*) = 0;
+    virtual ReturnValue visitBooleanExpr(Boolean*) = 0;
+    virtual ReturnValue visitNumberExpr(Number*) = 0;
+    virtual ReturnValue visitStringExpr(String*) = 0;
+    virtual ReturnValue visitNilExpr(Nil*) = 0;
 };
 
 // anything that is an ExprVisitor can visit this class
-class Expr : public Visitable<ExprVisitor> {
+class Expr : public Visitable< ExprVisitor<string>* , string, ExprVisitor< Expr * > *, Expr * > {
+public:
+    virtual char type() const = 0;
 };
 
 class Binary : public Expr {
@@ -53,8 +59,16 @@ public:
         this->right = right;
     }
     
-    void accept(ExprVisitor* ev) {
-        ev->visitBinaryExpr(this);
+    string accept(ExprVisitor<string>* ev) {
+        return ev->visitBinaryExpr(this);
+    }
+
+    Expr* accept(ExprVisitor< Expr * > * ev) {
+        return ev->visitBinaryExpr(this);
+    }
+
+    char type() const {
+        return 'b';
     }
 
     Expr* left;
@@ -69,8 +83,16 @@ public:
         this->right = right;
     }
     
-    void accept(ExprVisitor* ev) {
-        ev->visitUnaryExpr(this);
+    string accept(ExprVisitor<string> *ev) {
+        return ev->visitUnaryExpr(this);
+    }
+
+    Expr* accept(ExprVisitor< Expr * > * ev) {
+        return ev->visitUnaryExpr(this);
+    }
+
+    char type() const {
+        return 'U';
     }
 
     Token op;
@@ -83,8 +105,16 @@ public:
         this->expr = expr;
     }
     
-    void accept(ExprVisitor* ev) {
-        ev->visitGroupingExpr(this);
+    string accept(ExprVisitor<string> *ev) {
+        return ev->visitGroupingExpr(this);
+    }
+
+    Expr* accept(ExprVisitor< Expr * > * ev) {
+        return ev->visitGroupingExpr(this);
+    }
+
+    char type() const {
+        return 'G';
     }
 
     Expr* expr;
@@ -96,8 +126,16 @@ public:
         this->value = value;
     }
     
-    void accept(ExprVisitor* ev) {
-        ev->visitBooleanExpr(this);
+    string accept(ExprVisitor<string> *ev) {
+        return ev->visitBooleanExpr(this);
+    }
+
+    Expr* accept(ExprVisitor< Expr * > * ev) {
+        return ev->visitBooleanExpr(this);
+    }
+
+    char type() const {
+        return 'B';
     }
 
     bool value;
@@ -109,8 +147,16 @@ public:
         this->value = value;
     }
     
-    void accept(ExprVisitor* ev) {
-        ev->visitNumberExpr(this);
+    string accept(ExprVisitor<string> *ev) {
+        return ev->visitNumberExpr(this);
+    }
+
+    Expr* accept(ExprVisitor< Expr * > * ev) {
+        return ev->visitNumberExpr(this);
+    }
+
+    char type() const {
+        return 'N';
     }
 
     double value;
@@ -122,8 +168,16 @@ public:
         this->value = value;
     }
     
-    void accept(ExprVisitor* ev) {
-        ev->visitStringExpr(this);
+    string accept(ExprVisitor<string> *ev) {
+        return ev->visitStringExpr(this);
+    }
+
+    Expr* accept(ExprVisitor< Expr * > * ev) {
+        return ev->visitStringExpr(this);
+    }
+
+    char type() const {
+        return 's';
     }
 
     string value;
@@ -134,7 +188,15 @@ public:
     Nil() {
     }
     
-    void accept(ExprVisitor* ev) {
-        ev->visitNilExpr(this);
+    string accept(ExprVisitor<string> *ev) {
+        return ev->visitNilExpr(this);
+    }
+
+    Expr* accept(ExprVisitor< Expr * > * ev) {
+        return ev->visitNilExpr(this);
+    }
+
+    char type() const {
+        return '\0';
     }
 };

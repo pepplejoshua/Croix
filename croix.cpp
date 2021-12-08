@@ -16,6 +16,7 @@
 #include "AST/Token.h"
 #include "AST/AstPrinter.h"
 #include "Parser/Parser.h"
+#include "Interpreter/Interpreter.h"
 
 using namespace std;
 
@@ -87,23 +88,30 @@ void runFile(string path) {
     
     run(lines);
     if (CroixErrManager.SOURCE_HAD_ERROR) exit(65); // incorrect input error
+    if (CroixErrManager.RUNTIME_ERROR) exit(70);
 }
 
 // takes source code as a string and runs it
 void run(string src) {
     // do nothing for now
-   Lexer crxLex(src, CroixErrManager);
-   vector < Token > tokens = crxLex.lexTokens(); 
+    Lexer crxLex(src, &CroixErrManager);
+    vector < Token > tokens = crxLex.lexTokens(); 
 
-   Parser p(tokens, CroixErrManager);
-   Expr *e = p.parse();
-
-    if (CroixErrManager.SOURCE_HAD_ERROR) return;
+    bool v = CroixErrManager.SOURCE_HAD_ERROR;
     
-    if (e) {
-        AstPrinter pr;
-        cout << pr.print(e) << endl;
-    }
+    if (v) 
+        return;
+
+    Parser p(tokens, &CroixErrManager);
+    Expr *e = p.parse();
+
+    v = CroixErrManager.SOURCE_HAD_ERROR;
+
+    if (v) 
+        return;
+
+    Interpreter in(&CroixErrManager);
+    in.interpret(e);
 }
 
 // runs the repl for interactive program

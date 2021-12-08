@@ -19,12 +19,9 @@ double stringToDouble(string n) {
     return dN;
 }
 
-class ParseError : public exception {
-};
-
 class Parser {
 public:
-    Parser(vector < Token > ts, ErrHandler e) {
+    Parser(vector < Token > ts, ErrHandler* e) {
         tokens = ts;
         tokensIndex = 0;
         err = e;
@@ -91,7 +88,7 @@ private:
     }
 
     ParseError error(Token t, string msg) {
-        err.error(t, msg);
+        err->error(t, msg);
         return ParseError();
     }
 
@@ -241,7 +238,6 @@ private:
                 throw error(errOp, "Misused Binary operator " + errOp.lexeme + ".");
             }
             default: {
-                cout << "Saw " << peek().lexeme << endl;
                 break;
             }
         }
@@ -258,6 +254,8 @@ private:
 
     Expr* primary() {
         switch (peek().type) {
+            // replace Boolean() with constant
+            // versions
             case TRUE_: {
                 advanceIndex();
                 return new Boolean(true);
@@ -334,5 +332,5 @@ private:
 
     vector < Token > tokens;
     int tokensIndex;
-    ErrHandler err;
+    ErrHandler* err;
 };

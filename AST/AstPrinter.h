@@ -8,70 +8,75 @@
 
 using namespace std;
 
-class AstPrinter : public ExprVisitor {
+class Expr;
+class Binary;
+class Unary;
+class Grouping;
+class Boolean;
+class Number;
+class String;
+class Nil;
+
+class AstPrinter : public ExprVisitor<string> {
 public:
-    AstPrinter() {
-        content = "";
-    }
+    AstPrinter() {}
 
     string print(Expr* e) {
-        e->accept(this);
-        string v = content;
-        content = "";
-        return v;
+        return e->accept(this);
     }  
 
-    void visitBinaryExpr(Binary* e) {
+    string visitBinaryExpr(Binary* e) {
         vector < Expr * > exprs;
         exprs.push_back(e->left);
         exprs.push_back(e->right);
-        parenthesize(e->op.String(), exprs);
+        return parenthesize(e->op.String(), exprs);
     }
 
-    void visitUnaryExpr(Unary* e) {
+    string visitUnaryExpr(Unary* e) {
         vector < Expr * > exprs;
         exprs.push_back(e->right);
-        parenthesize(e->op.String(), exprs);
+        return parenthesize(e->op.String(), exprs);
     }
 
-    void visitGroupingExpr(Grouping* e) {
+    string visitGroupingExpr(Grouping* e) {
         vector < Expr * > exprs;
         exprs.push_back(e->expr);
-        parenthesize("grouped", exprs);
+        return parenthesize("grouped", exprs);
     }
 
-    void visitBooleanExpr(Boolean* e) {
-        content += (e->value ? "true" : "false");
+    string visitBooleanExpr(Boolean* e) {
+        return e->value ? "true" : "false";
     }
 
-    void visitNumberExpr(Number* e) {
+    string visitNumberExpr(Number* e) {
         double n = e->value;
 
         if (floor(n) != n) // we have a decimal part
-            content += to_string(n);
+            return to_string(n);
         else
-            content += to_string((int) n);
+            return to_string((int) n);
     }
 
-    void visitStringExpr(String* e) {
-        content += "'" + e->value + "'";
+    string visitStringExpr(String* e) {
+        return "'" + e->value + "'";
     }
 
-    void visitNilExpr(Nil* e) {
-        content += "nil";
+    string visitNilExpr(Nil* e) {
+        return "nil";
     }
 
 
 private:
-    void parenthesize(string tag, vector < Expr * > exprs) {
-        content.append("(").append(tag);
+    string parenthesize(string tag, vector < Expr * > exprs) {
+        string o = "";
+        o.append("(").append(tag);
         for (int i = 0; i < exprs.size(); ++i) {
             Expr *e = exprs[i];
-            content.append(" ");
-            e->accept(this); // move onto the next expr and represent it
+            o.append(" ");
+            o.append(e->accept(this)); // move onto the next expr and represent it
         }
 
-        content.append(")");
+        o.append(")");
+        return o;
     }
-    string content;
 };

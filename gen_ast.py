@@ -100,7 +100,9 @@ def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
         "Boolean",
         "Number",
         "String",
-        "Nil"
+        "Nil",
+        # "Henok",
+        # "Chidera"
     ]
     forwardDeclareClasses(Cpp, classes)
 
@@ -171,7 +173,8 @@ types = [
     "Number    :  double value",
     "String    :  string value",
     "Nil       :"
-    # "Henok     :  int age, string hairColor, string top, string bottom"
+    # "Henok     :  int age, string hairColor, string top, string bottom",
+    # "Chidera   :  double a, int b, string c, char d, long e"
 ]
 
-generateExprHeaderForTypes(dest, "Expr", types)
+generateExprHeaderForTypes(dest, "Test", types)
