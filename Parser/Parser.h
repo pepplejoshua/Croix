@@ -5,6 +5,7 @@
 #include "../AST/TokenTypes.h"
 #include "../AST/Token.h"
 #include "../AST/Expr.h"
+#include "../AST/Stmt.h"
 #include "../Helpers/ErrHandler.h"
 #include <vector>
 
@@ -27,69 +28,49 @@ public:
         err = e;
     }
 
-    // top level parse function to begin all parsing
-    Expr* parse() {
+    vector < Stmt* > parse() {
+        vector < Stmt* > stmts;
         try {
-            return expression();
+            while (!isAtEnd()) {
+                stmts.push_back(statement());
+            }
         } catch (ParseError e) {
-            return NULL;
+            return stmts; 
         }
+        
+        return stmts;
     }
 
-private:
-    // returns unprocessed current token
-    Token peek() {
-        return tokens[tokensIndex];
+    // top level parse function to begin all parsing
+    // Expr* parse() {
+    //     try {
+    //         return expression();
+    //     } catch (ParseError e) {
+    //         return NULL;
+    //     }
+    // }
+
+private:    
+    // describes the statement types in this language
+
+    Stmt* statement() {
+        if (match(PRINT)) return printStatement();
+
+        return expressionStatement();
     }
 
-    // returns last processed token
-    Token previous() {
-        return tokens[tokensIndex - 1];
+    // print statement
+    Stmt* printStatement() {
+        Expr *e = expression();
+        consume(SEMICOLON, "Expected ';' to terminate statement");
+        return new Print(e);
     }
 
-    // checks if we have finished parsing
-    bool isAtEnd() {
-        if (peek().type == EOF_)
-            return true;
-        return false;
-    }
-
-    // checks if the current token has any of the types provided
-    bool matches(vector < TokenType > types) {
-        for (int i = 0; i < types.size(); ++i) {
-            TokenType tt = types[i];
-            if (match(tt)) return true; // use single match function   
-        }
-        return false;
-    }     
-
-    Token advanceIndex() {
-        if (!isAtEnd()) tokensIndex++; // advance by one
-        return previous(); // return recently consumed token
-    }
-
-    bool match(TokenType t) {
-        if (check(t)) {
-            advanceIndex(); // we found a matching type, consume token
-            return true;
-        }
-        return false;
-    }
-
-    bool check(TokenType t) {
-        if (isAtEnd()) return false;
-        return peek().type == t;
-    }
-
-    Token consume(TokenType exp, string msg) {
-        if (check(exp)) return advanceIndex();
-
-        throw error(peek(), msg);
-    }
-
-    ParseError error(Token t, string msg) {
-        err->error(t, msg);
-        return ParseError();
+    // expression statement
+    Stmt* expressionStatement() {
+        Expr *e = expression();
+        consume(SEMICOLON, "Expected ';' to terminate statement");
+        return new Expression(e);
     }
 
     // PARSE HIERARCHY
@@ -328,6 +309,61 @@ private:
             }
             advanceIndex();
         }    
+    }
+
+    // returns unprocessed current token
+    Token peek() {
+        return tokens[tokensIndex];
+    }
+
+    // returns last processed token
+    Token previous() {
+        return tokens[tokensIndex - 1];
+    }
+
+    // checks if we have finished parsing
+    bool isAtEnd() {
+        if (peek().type == EOF_)
+            return true;
+        return false;
+    }
+
+    // checks if the current token has any of the types provided
+    bool matches(vector < TokenType > types) {
+        for (int i = 0; i < types.size(); ++i) {
+            TokenType tt = types[i];
+            if (match(tt)) return true; // use single match function   
+        }
+        return false;
+    }     
+
+    Token advanceIndex() {
+        if (!isAtEnd()) tokensIndex++; // advance by one
+        return previous(); // return recently consumed token
+    }
+
+    bool match(TokenType t) {
+        if (check(t)) {
+            advanceIndex(); // we found a matching type, consume token
+            return true;
+        }
+        return false;
+    }
+
+    bool check(TokenType t) {
+        if (isAtEnd()) return false;
+        return peek().type == t;
+    }
+
+    Token consume(TokenType exp, string msg) {
+        if (check(exp)) return advanceIndex();
+
+        throw error(peek(), msg);
+    }
+
+    ParseError error(Token t, string msg) {
+        err->error(t, msg);
+        return ParseError();
     }
 
     vector < Token > tokens;

@@ -1,7 +1,9 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
 #include "../AST/Expr.h"
+#include "../AST/Stmt.h"
 #include "../AST/TokenTypes.h"
 #include "../AST/AstPrinter.h"
 #include "../Helpers/ErrHandler.h"
@@ -107,10 +109,11 @@ bool areNumbersOrStrings(Token op, Expr *a, Expr *b) {
     throw RuntimeError(op, "Operands must be 2 Numbers or 2 Strings.");
 }
 
-class Interpreter : public ExprVisitor<Expr*> {
+class Interpreter : public ExprVisitor<Expr*>, public StmtVisitor<void> {
 public:
-    Interpreter(ErrHandler* e) { 
+    Interpreter(ErrHandler* e, bool interactiveMode=false) { 
         handler = e;
+        interacting = interactiveMode;
     }
 
     Expr* eval(Expr* in) {
@@ -295,20 +298,45 @@ public:
         return e;
     }
 
-    void interpret(Expr* e) {
-        try {
-            Expr *r = eval(e);
-            if (r && r->type() != '\0') {
-                cout << pr.print(r) << endl;
-            }
+    void showExpr(Expr* v) {
+        if (v && v->type() != '\0') {
+            if (interacting)
+                cout << "  = " << pr.print(v) << endl;
+            else
+                cout << pr.print(v) << endl;
+        }
+    }
 
+    void visitExpressionStmt(Expression* e) {
+        if (interacting) {
+            Expr* v = eval(e->expr);
+            showExpr(v); 
+        } else
+            eval(e->expr);
+    }
+
+    void visitPrintStmt(Print* e) {
+        Expr* v = eval(e->expr);
+        showExpr(v);   
+    }
+
+    void interpret(vector < Stmt* > stmts) {
+        try {
+            for (int i = 0; i < stmts.size(); ++i) {
+                execute(stmts[i]);
+            }
         } catch (RuntimeError& err) {
             handler->runtimeError(err);
         }
         
     }
 
+    void execute(Stmt *s) {
+        s->accept(this);
+    }
+
 private:
     ErrHandler* handler;
     AstPrinter pr;
+    bool interacting;
 };

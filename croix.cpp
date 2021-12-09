@@ -12,6 +12,7 @@
 #include "Lexer/Lexer.h"
 #include "Helpers/ErrHandler.h"
 #include "AST/Expr.h"
+#include "AST/Stmt.h"
 #include "AST/TokenTypes.h"
 #include "AST/Token.h"
 #include "AST/AstPrinter.h"
@@ -32,7 +33,7 @@ string readAllLines(string path);
 void runFile(string path);
 
 // takes source code as a string and runs it
-void run(string src);
+void run(string src, bool interact=false);
 
 // runs the repl loop for croix
 void runPrompt();
@@ -84,15 +85,18 @@ string readAllLines(string path) {
 void runFile(string path) {
     cout << "Running file -> " << path << endl;
     string lines = readAllLines(path);
+
+    cout << "<----------------- File contents ----------------->\n";
     cout << lines << endl;
-    
+    cout << "---------------------------------------------------\n\n";
+     
     run(lines);
     if (CroixErrManager.SOURCE_HAD_ERROR) exit(65); // incorrect input error
     if (CroixErrManager.RUNTIME_ERROR) exit(70);
 }
 
 // takes source code as a string and runs it
-void run(string src) {
+void run(string src, bool interact) {
     // do nothing for now
     Lexer crxLex(src, &CroixErrManager);
     vector < Token > tokens = crxLex.lexTokens(); 
@@ -103,15 +107,15 @@ void run(string src) {
         return;
 
     Parser p(tokens, &CroixErrManager);
-    Expr *e = p.parse();
+    vector < Stmt* > stmts = p.parse();
 
     v = CroixErrManager.SOURCE_HAD_ERROR;
 
     if (v) 
         return;
 
-    Interpreter in(&CroixErrManager);
-    in.interpret(e);
+    Interpreter in(&CroixErrManager, interact);
+    in.interpret(stmts);
 }
 
 // runs the repl for interactive program
@@ -129,7 +133,7 @@ void runPrompt() {
             cout << "...bye..." << endl;
             break;
         }
-        run(line); // execute line
+        run(line, true); // execute line
         CroixErrManager.SOURCE_HAD_ERROR = false; // reset flag so it doesn't kill session for user
     }
 }

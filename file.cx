@@ -1,6 +1,7 @@
-// adding some file contents
-1 + 2
-3 + 4 * 3 
+// print my name
+print "Joshua" + " " + "Pepple";
 
-(( )) {} // grouping stuff
-!*+-/=<> <= >= != == // operators
+// print my age
+print 2 * (10 + 1);
+
+print 22 >= 18 ? "Adult" : "Underage";

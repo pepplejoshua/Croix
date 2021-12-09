@@ -1,5 +1,6 @@
 import sys
 from datetime import datetime
+from typing import List
 
 class CodeAssembler:
     def __init__(ca) -> None:
@@ -31,7 +32,7 @@ class CodeAssembler:
 
 # add top comments and include statements
 # aka boilerplate
-def addTopOfFile(Cpp: CodeAssembler, baseClass: str):
+def addTopOfFile(Cpp: CodeAssembler, baseClass: str, importExpr=False):
     Cpp.insert("//") 
     Cpp.insert(f"// {baseClass}.h")
     Cpp.insert("// Croix")
@@ -46,10 +47,12 @@ def addTopOfFile(Cpp: CodeAssembler, baseClass: str):
     Cpp.insert("#include <iostream>")
     Cpp.insert("#include <string>")
     Cpp.insert('#include "Token.h"')
+    if importExpr:
+        Cpp.insert('#include "Expr.h"')
     Cpp.insert()
     Cpp.insert("using namespace std;")
 
-def defineVisitableGeneric(Cpp: CodeAssembler, pairCount: int):
+def defineVisitableGeneric(Cpp: CodeAssembler, pairCount: int, vStr: str="Visitable"):
     Cpp.insert()
     Cpp.insert("// class to be inherited by abstract base class")
     Cpp.insert("// to allow the template defined types visit this class")
@@ -78,7 +81,7 @@ def defineVisitableGeneric(Cpp: CodeAssembler, pairCount: int):
     # replace last comma with > to close template 
     tStr = tStr[0:len(tStr)] + " >"
     Cpp.insert(tStr)
-    Cpp.insert("class Visitable {")
+    Cpp.insert(f"class {vStr} " + "{")
     Cpp.insert("public:")
     
     for fn in acceptFns:
@@ -91,12 +94,12 @@ def forwardDeclareClasses(Cpp: CodeAssembler, classes: list[str]):
     for cl in classes:
         Cpp.insert(f"class {cl};")
 
-def defineExprVisitor(Cpp: CodeAssembler, classes: list[str], baseClass: str):
+def defineVisitorGeneric(Cpp: CodeAssembler, classes: list[str], baseClass: str, typeTag: str = "Expr"):
     Cpp.insert()
     Cpp.insert("// class to be inherited by classes that intend to visit")
     rTag = "ReturnValue"
     Cpp.insert(f"template < typename {rTag} >")
-    Cpp.insert("class ExprVisitor {")
+    Cpp.insert(f"class {typeTag}Visitor " + "{")
     Cpp.insert("public:")
     
     for cl in classes:
@@ -104,18 +107,31 @@ def defineExprVisitor(Cpp: CodeAssembler, classes: list[str], baseClass: str):
         Cpp.indentInsertDedent(ln)
     Cpp.insert("};")
 
-def defineBaseClass(Cpp: CodeAssembler, baseClass: str):
+def defineBaseClass(Cpp: CodeAssembler, baseClass: str, stmt=False):
     Cpp.insert()
     Cpp.insert("// anything that is an ExprVisitor can visit this class")
 
-    # build the Visitable inheritance statement:
-    returns = ["string", f"{baseClass} *"]
 
-    inher = "public Visitable < "
+    # build the Visitable inheritance statement:
+    returns : list[str]
+
+    if stmt:
+        returns = ["void"]
+    else:
+        returns = ["string", f"{baseClass} *"]
+
+    if stmt:
+        inher = "public VisitableStmt < "
+        #  build the Visitable inheritance statement:
+    else:
+        inher = "public Visitable < "
 
     for i in range(len(returns)):
         r = returns[i]
-        inher += f"ExprVisitor < {r} > *, {r}"
+        if stmt:
+            inher += f"StmtVisitor < {r} > *, {r}"
+        else:
+            inher += f"ExprVisitor < {r} > *, {r}"
 
         if i+1 != len(returns):
             inher += ', '
@@ -126,43 +142,7 @@ def defineBaseClass(Cpp: CodeAssembler, baseClass: str):
     Cpp.indentInsertDedent("virtual char type() const = 0;")
     Cpp.insert("};")
 
-def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
-    outPath = "./" + outDir + '/' + baseClass +'.h'
-
-    print("writing to", outPath)
-    Cpp = CodeAssembler()
-
-    addTopOfFile(Cpp, baseClass)    
-
-    classes = [
-        "Binary",
-        "Unary", 
-        "Grouping",
-        "Boolean",
-        "Number",
-        "String",
-        "Nil",
-        # "Henok",
-        # "Chidera"
-    ]
-
-    forwardDeclareClasses(Cpp, classes)
-
-    defineVisitableGeneric(Cpp, 2)
-    defineExprVisitor(Cpp, classes, baseClass)
-
-    defineBaseClass(Cpp, baseClass)
-    
-    for t in types:
-        Cpp.insert()
-        className = t.split(':')[0].strip()
-        fields = t.split(':')[1].strip()
-        defineType(Cpp, baseClass, className, fields)
-    
-    with open(outPath, 'w+') as astFile:
-        astFile.write(str(Cpp))
-
-def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: str):
+def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: str, stmt: bool = False):
     # start of new class 
     Cpp.insert(f"class {className} : public {baseClass} " + "{")
 
@@ -182,13 +162,25 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
     Cpp.insert("}")
 
     # generate necessary accept functions
+    returns : list[str]
+
+    if stmt:
+        returns = ["void"]
+    else:
+        returns = ["string", f"{baseClass}*"]
     
-    returns = ["string", f"{baseClass}*"]
     for r in returns:
         Cpp.insert()
-        fnDef = f"{r} accept(ExprVisitor< {r} >* ev) " + "{"
+        if stmt:
+            fnDef = f"{r} accept(StmtVisitor< {r} >* ev) " + "{"
+        else:
+            fnDef = f"{r} accept(ExprVisitor< {r} >* ev) " + "{"
         Cpp.insert(fnDef)
-        Cpp.indentInsertDedent(f"return ev->visit{className}{baseClass}(this);")
+
+        if r == "void":
+            Cpp.indentInsertDedent(f"ev->visit{className}{baseClass}(this);")
+        else:
+            Cpp.indentInsertDedent(f"return ev->visit{className}{baseClass}(this);")
         Cpp.insert("}")
     
     Cpp.insert()
@@ -199,7 +191,9 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
         "Grouping": 'G',
         "Boolean": 'B',
         "Number": 'N',
-        "String": 's'
+        "String": 's',
+        "Expression" : 'E',
+        "Print": 'P'
     }
     tag = mp.get(className, None)
     if tag:
@@ -222,7 +216,66 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
 
     Cpp.insert("};")
     Cpp.dedent()
+
+def writeOut(path: str, Cpp: CodeAssembler):
+    print("writing to", path)
+    with open(path, 'w+') as astFile:
+        astFile.write(str(Cpp))
+
+def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
+    outPath = "./" + outDir + '/' + baseClass +'.h'
+
+    Cpp = CodeAssembler()
+    addTopOfFile(Cpp, baseClass)    
+
+    classes = [
+        "Binary",
+        "Unary", 
+        "Grouping",
+        "Boolean",
+        "Number",
+        "String",
+        "Nil"
+    ]
+
+    forwardDeclareClasses(Cpp, classes)
+
+    defineVisitableGeneric(Cpp, 2)
+    defineVisitorGeneric(Cpp, classes, baseClass)
+
+    defineBaseClass(Cpp, baseClass)
     
+    for t in types:
+        Cpp.insert()
+        className = t.split(':')[0].strip()
+        fields = t.split(':')[1].strip()
+        defineType(Cpp, baseClass, className, fields)
+    
+    writeOut(outPath, Cpp)
+
+def generateStmtHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
+    outPath = "./" + outDir + '/' + baseClass +'.h'
+
+    Cpp = CodeAssembler()
+    addTopOfFile(Cpp, baseClass, True)
+
+    classes = [
+        "Expression",
+        "Print"
+    ]
+
+    forwardDeclareClasses(Cpp, classes)
+    defineVisitableGeneric(Cpp, 1, "VisitableStmt")
+    defineVisitorGeneric(Cpp, classes, baseClass, "Stmt")
+
+    defineBaseClass(Cpp, baseClass, stmt=True)
+    for t in types:
+        Cpp.insert()
+        className = t.split(':')[0].strip()
+        fields = t.split(':')[1].strip()
+        defineType(Cpp, baseClass, className, fields, stmt=True)
+   
+    writeOut(outPath, Cpp)
 
 argc = len(sys.argv)
 if (argc != 2):
@@ -230,9 +283,7 @@ if (argc != 2):
     exit(64) # exit with wrong usage error
 
 dest = sys.argv[1]
-
 baseClass = "Expr"
-
 types = [ 
     f"Binary    :  {baseClass}* left, Token op, {baseClass}* right",
     f"Unary     :  Token op, {baseClass}* right",
@@ -240,9 +291,17 @@ types = [
     f"Boolean   :  bool value",
     f"Number    :  double value",
     f"String    :  string value",
-    f"Nil       :"
-    # "Henok     :  int age, string hairColor, string top, string bottom",
-    # "Chidera   :  double a, int b, string c, char d, long e"
+    f"Nil       :",
+    f"Variable  :  Token name",
 ]
-
 generateExprHeaderForTypes(dest, baseClass, types)
+
+
+
+stmtBaseClass = "Stmt"
+sTypes = [
+    "Expression     :  Expr* expr",
+    "Print          :  Expr* expr",
+    "Var            :  Token name, Expr* init"
+]
+generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)
