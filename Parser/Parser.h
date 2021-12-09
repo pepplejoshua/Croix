@@ -28,31 +28,43 @@ public:
         err = e;
     }
 
+    // top level parse function to begin all parsing
     vector < Stmt* > parse() {
         vector < Stmt* > stmts;
-        try {
-            while (!isAtEnd()) {
-                stmts.push_back(statement());
-            }
-        } catch (ParseError e) {
-            return stmts; 
+        while (!isAtEnd()) {
+            Stmt* s = declaration();
+            if (s) {
+                stmts.push_back(s);
+            } 
         }
-        
         return stmts;
     }
+    
+private:
+    // this handles variable declarations
+    // or it routes to statements
+    Stmt* declaration() {
+        try {
+            if (match(VAR)) return varDeclaration(); 
+            return statement();
+        } catch (ParseError e) {
+            synchronize(); // we use synchronize here to survive the panic, and try to parse even further after reporting errors
+            return NULL;
+        }
+    }   
 
-    // top level parse function to begin all parsing
-    // Expr* parse() {
-    //     try {
-    //         return expression();
-    //     } catch (ParseError e) {
-    //         return NULL;
-    //     }
-    // }
+    Stmt* varDeclaration() {
+        Token variableName = consume(IDENTIFIER, "Expected variable name.");
 
-private:    
+        Expr* init = NULL;
+        if (match(EQUAL)) // perform assignment of expression
+            init = expression();
+        
+        consume(SEMICOLON, "Expected ';' to terminate variable declaration.");
+        return new Var(variableName, init);
+    }
+
     // describes the statement types in this language
-
     Stmt* statement() {
         if (match(PRINT)) return printStatement();
 
@@ -62,14 +74,14 @@ private:
     // print statement
     Stmt* printStatement() {
         Expr *e = expression();
-        consume(SEMICOLON, "Expected ';' to terminate statement");
+        consume(SEMICOLON, "Expected ';' to terminate print statement");
         return new Print(e);
     }
 
     // expression statement
     Stmt* expressionStatement() {
         Expr *e = expression();
-        consume(SEMICOLON, "Expected ';' to terminate statement");
+        consume(SEMICOLON, "Expected ';' to terminate expression statement");
         return new Expression(e);
     }
 
@@ -269,6 +281,11 @@ private:
                 Expr *e = expression();
                 consume(RIGHT_PAREN, "Expected ')' following expression.");
                 return new Grouping(e);
+                break;
+            }
+            case IDENTIFIER: {
+                advanceIndex();
+                return new Variable(previous()); // get the identifier
                 break;
             }
             default: {

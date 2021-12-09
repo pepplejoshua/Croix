@@ -16,6 +16,7 @@ using namespace std;
 
 class Expression;
 class Print;
+class Var;
 
 // class to be inherited by abstract base class
 // to allow the template defined types visit this class
@@ -33,6 +34,7 @@ class StmtVisitor {
 public:
     virtual ReturnValue visitExpressionStmt(Expression*) = 0;
     virtual ReturnValue visitPrintStmt(Print*) = 0;
+    virtual ReturnValue visitVarStmt(Var*) = 0;
 };
 
 // anything that is an ExprVisitor can visit this class
@@ -73,4 +75,23 @@ public:
     }
 
     Expr* expr;
+};
+
+class Var : public Stmt {
+public:
+    Var(Token name, Expr* initValue) {
+        this->name = name;
+        this->initValue = initValue;
+    }
+    
+    void accept(StmtVisitor< void >* ev) {
+        ev->visitVarStmt(this);
+    }
+    
+    char type() const {
+        return 'V';
+    }
+
+    Token name;
+    Expr* initValue;
 };

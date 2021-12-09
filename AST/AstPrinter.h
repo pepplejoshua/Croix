@@ -65,6 +65,9 @@ public:
         return "nil";
     }
 
+    string visitVariableExpr(Variable* e) {
+        return e->name.lexeme;
+    }
 
 private:
     string parenthesize(string tag, vector < Expr * > exprs) {

@@ -1,7 +1,10 @@
 // print my name
-print "Joshua" + " " + "Pepple";
+var first = "Joshua";
+var last = "Pepple";
+print first + " " + last;
 
 // print my age
-print 2 * (10 + 1);
+var myAge = 2 * (10 + 1);
+print myAge;
 
-print 22 >= 18 ? "Adult" : "Underage";
+print myAge >= 18 ? "Adult" : "Underage";

@@ -193,7 +193,9 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
         "Number": 'N',
         "String": 's',
         "Expression" : 'E',
-        "Print": 'P'
+        "Print": 'P',
+        "Var": 'V',
+        "Variable": 'v',
     }
     tag = mp.get(className, None)
     if tag:
@@ -235,7 +237,8 @@ def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
         "Boolean",
         "Number",
         "String",
-        "Nil"
+        "Nil",
+        "Variable"
     ]
 
     forwardDeclareClasses(Cpp, classes)
@@ -261,7 +264,8 @@ def generateStmtHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
 
     classes = [
         "Expression",
-        "Print"
+        "Print",
+        "Var"
     ]
 
     forwardDeclareClasses(Cpp, classes)
@@ -294,7 +298,7 @@ types = [
     f"Nil       :",
     f"Variable  :  Token name",
 ]
-generateExprHeaderForTypes(dest, baseClass, types)
+# generateExprHeaderForTypes(dest, baseClass, types)
 
 
 
@@ -302,6 +306,6 @@ stmtBaseClass = "Stmt"
 sTypes = [
     "Expression     :  Expr* expr",
     "Print          :  Expr* expr",
-    "Var            :  Token name, Expr* init"
+    "Var            :  Token name, Expr* initValue"
 ]
 generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)

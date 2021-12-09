@@ -7,6 +7,7 @@
 #include "../AST/TokenTypes.h"
 #include "../AST/AstPrinter.h"
 #include "../Helpers/ErrHandler.h"
+#include "../Environment/Environment.h"
 
 using namespace std;
 
@@ -114,6 +115,7 @@ public:
     Interpreter(ErrHandler* e, bool interactiveMode=false) { 
         handler = e;
         interacting = interactiveMode;
+        env = new Environment(e);
     }
 
     Expr* eval(Expr* in) {
@@ -298,10 +300,15 @@ public:
         return e;
     }
 
+    Expr* visitVariableExpr(Variable* e) {
+        Expr *v = env->get(e->name);
+        return v;
+    }
+
     void showExpr(Expr* v) {
-        if (v && v->type() != '\0') {
+        if (v) {
             if (interacting)
-                cout << "  = " << pr.print(v) << endl;
+                cout << "\n  " << pr.print(v) << endl;
             else
                 cout << pr.print(v) << endl;
         }
@@ -320,6 +327,17 @@ public:
         showExpr(v);   
     }
 
+    void visitVarStmt(Var* e) {
+        Expr* v = NULL;
+        if (e->initValue) {
+            v = eval(e->initValue);
+        } else {
+            v = new Nil();
+        }
+
+        env->define(e->name.lexeme, v);
+    }
+
     void interpret(vector < Stmt* > stmts) {
         try {
             for (int i = 0; i < stmts.size(); ++i) {
@@ -328,7 +346,6 @@ public:
         } catch (RuntimeError& err) {
             handler->runtimeError(err);
         }
-        
     }
 
     void execute(Stmt *s) {
@@ -339,4 +356,5 @@ private:
     ErrHandler* handler;
     AstPrinter pr;
     bool interacting;
+    Environment* env;
 };

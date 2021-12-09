@@ -20,6 +20,7 @@ class Boolean;
 class Number;
 class String;
 class Nil;
+class Variable;
 
 // class to be inherited by abstract base class
 // to allow the template defined types visit this class
@@ -43,6 +44,7 @@ public:
     virtual ReturnValue visitNumberExpr(Number*) = 0;
     virtual ReturnValue visitStringExpr(String*) = 0;
     virtual ReturnValue visitNilExpr(Nil*) = 0;
+    virtual ReturnValue visitVariableExpr(Variable*) = 0;
 };
 
 // anything that is an ExprVisitor can visit this class
@@ -199,4 +201,25 @@ public:
     char type() const {
         return '\0';
     }
+};
+
+class Variable : public Expr {
+public:
+    Variable(Token name) {
+        this->name = name;
+    }
+    
+    string accept(ExprVisitor< string >* ev) {
+        return ev->visitVariableExpr(this);
+    }
+    
+    Expr* accept(ExprVisitor< Expr* >* ev) {
+        return ev->visitVariableExpr(this);
+    }
+    
+    char type() const {
+        return 'v';
+    }
+
+    Token name;
 };
