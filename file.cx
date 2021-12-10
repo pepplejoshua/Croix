@@ -8,3 +8,14 @@ var myAge = 2 * (10 + 1);
 print myAge;
 
 print myAge >= 18 ? "Adult" : "Underage";
+
+// playing with variables
+var a = myAge;
+var b = 10000.00;
+
+a = 2;
+b = 1;
+
+print a + b;
+
+print 141 + 1664 + 313;

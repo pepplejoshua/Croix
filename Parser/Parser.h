@@ -88,7 +88,31 @@ private:
     // PARSE HIERARCHY
     // expression -> equality
     Expr* expression() {
-        return ternary();
+        return assignment();
+    }
+
+    // handles the modification of variables
+    Expr* assignment() {
+        Expr* target = ternary();
+
+        if (match(EQUAL)) { // we are assigning
+            Token eq = previous();
+            Expr* v = assignment();
+
+            switch(target->type()) {
+                case 'v': {
+                    Token varName = dynamic_cast<Variable *>(target)->name; 
+                    return new Assign(varName, v);
+                    break;
+                }
+                default: {
+                    cout << target->type() << endl;
+                    error(eq, "Cannot assign to specified target.");
+                }
+            }
+        }
+
+        return target; // we aren't assigning
     }
 
     // potential solution for ternary problem

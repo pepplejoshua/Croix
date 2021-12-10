@@ -23,7 +23,13 @@ public:
 
     string print(Expr* e) {
         return e->accept(this);
-    }  
+    } 
+
+    string visitAssignExpr(Assign* e) {
+        vector < Expr * > exprs;
+        exprs.push_back(e->value);
+        return parenthesize("= " + e->name.lexeme, exprs);
+    } 
 
     string visitBinaryExpr(Binary* e) {
         vector < Expr * > exprs;

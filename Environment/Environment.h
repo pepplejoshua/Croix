@@ -29,6 +29,12 @@ public:
         throw RuntimeError(name, "Undefined variable reference '" + name.lexeme + "'.");
     }
 
+    void assign(Token varName, Expr* value) {
+        if (get(varName)) {
+            define(varName.lexeme, value);
+        }
+    }
+
 private:
     ErrHandler* handler;
     map < string, Expr* > values;

@@ -112,14 +112,24 @@ bool areNumbersOrStrings(Token op, Expr *a, Expr *b) {
 
 class Interpreter : public ExprVisitor<Expr*>, public StmtVisitor<void> {
 public:
-    Interpreter(ErrHandler* e, bool interactiveMode=false) { 
+    Interpreter(ErrHandler* e, bool interactiveMode=false, Environment* pEnv=NULL) { 
         handler = e;
         interacting = interactiveMode;
-        env = new Environment(e);
+
+        if (pEnv)
+            env = pEnv;
+        else
+            env = new Environment(e);
     }
 
     Expr* eval(Expr* in) {
         return in->accept(this);
+    }
+
+    Expr* visitAssignExpr(Assign* e) {
+        Expr *v = eval(e->value);
+        env->assign(e->name, v);
+        return v;
     }
 
     Expr* visitBinaryExpr(Binary* e) {

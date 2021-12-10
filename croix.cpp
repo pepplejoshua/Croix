@@ -18,6 +18,7 @@
 #include "AST/AstPrinter.h"
 #include "Parser/Parser.h"
 #include "Interpreter/Interpreter.h"
+#include "Environment/Environment.h"
 
 using namespace std;
 
@@ -39,6 +40,7 @@ void run(string src, bool interact=false);
 void runPrompt();
 
 ErrHandler CroixErrManager;
+Environment env(&CroixErrManager);
 
 int main(int argc, const char * argv[]) {
     // 34 + (- (2 ^ 3))
@@ -87,7 +89,7 @@ void runFile(string path) {
     string lines = readAllLines(path);
 
     cout << "<----------------- File contents ----------------->\n";
-    cout << lines << endl;
+    cout << lines;
     cout << "---------------------------------------------------\n\n";
      
     run(lines);
@@ -114,7 +116,7 @@ void run(string src, bool interact) {
     if (v) 
         return;
 
-    Interpreter in(&CroixErrManager, interact);
+    Interpreter in(&CroixErrManager, interact, &env);
     in.interpret(stmts);
 }
 

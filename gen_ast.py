@@ -231,6 +231,7 @@ def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
     addTopOfFile(Cpp, baseClass)    
 
     classes = [
+        "Assign",
         "Binary",
         "Unary", 
         "Grouping",
@@ -289,6 +290,7 @@ if (argc != 2):
 dest = sys.argv[1]
 baseClass = "Expr"
 types = [ 
+    f"Assign    :  Token name, {baseClass}* value",
     f"Binary    :  {baseClass}* left, Token op, {baseClass}* right",
     f"Unary     :  Token op, {baseClass}* right",
     f"Grouping  :  {baseClass}* expr",
@@ -298,7 +300,7 @@ types = [
     f"Nil       :",
     f"Variable  :  Token name",
 ]
-# generateExprHeaderForTypes(dest, baseClass, types)
+generateExprHeaderForTypes(dest, baseClass, types)
 
 
 
@@ -308,4 +310,4 @@ sTypes = [
     "Print          :  Expr* expr",
     "Var            :  Token name, Expr* initValue"
 ]
-generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)
+# generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)

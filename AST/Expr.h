@@ -13,6 +13,7 @@
 
 using namespace std;
 
+class Assign;
 class Binary;
 class Unary;
 class Grouping;
@@ -37,6 +38,7 @@ public:
 template < typename ReturnValue >
 class ExprVisitor {
 public:
+    virtual ReturnValue visitAssignExpr(Assign*) = 0;
     virtual ReturnValue visitBinaryExpr(Binary*) = 0;
     virtual ReturnValue visitUnaryExpr(Unary*) = 0;
     virtual ReturnValue visitGroupingExpr(Grouping*) = 0;
@@ -51,6 +53,29 @@ public:
 class Expr : public Visitable < ExprVisitor < string > *, string, ExprVisitor < Expr * > *, Expr * > {
 public:
     virtual char type() const = 0;
+};
+
+class Assign : public Expr {
+public:
+    Assign(Token name, Expr* value) {
+        this->name = name;
+        this->value = value;
+    }
+    
+    string accept(ExprVisitor< string >* ev) {
+        return ev->visitAssignExpr(this);
+    }
+    
+    Expr* accept(ExprVisitor< Expr* >* ev) {
+        return ev->visitAssignExpr(this);
+    }
+    
+    char type() const {
+        return '\0';
+    }
+
+    Token name;
+    Expr* value;
 };
 
 class Binary : public Expr {
