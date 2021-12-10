@@ -30,9 +30,28 @@ class CodeAssembler:
     def __str__(ca) -> str:
         return ''.join(ca.body)
 
+sclasses = [
+        "Expression",
+        "Print",
+        "Var",
+        "Block",
+    ]
+
+eclasses = [
+        "Assign",
+        "Binary",
+        "Unary", 
+        "Grouping",
+        "Boolean",
+        "Number",
+        "String",
+        "Nil",
+        "Variable"
+    ]
+
 # add top comments and include statements
 # aka boilerplate
-def addTopOfFile(Cpp: CodeAssembler, baseClass: str, importExpr=False):
+def addTopOfFile(Cpp: CodeAssembler, baseClass: str, stmt=False):
     Cpp.insert("//") 
     Cpp.insert(f"// {baseClass}.h")
     Cpp.insert("// Croix")
@@ -47,8 +66,9 @@ def addTopOfFile(Cpp: CodeAssembler, baseClass: str, importExpr=False):
     Cpp.insert("#include <iostream>")
     Cpp.insert("#include <string>")
     Cpp.insert('#include "Token.h"')
-    if importExpr:
+    if stmt:
         Cpp.insert('#include "Expr.h"')
+        Cpp.insert("#include <vector>")
     Cpp.insert()
     Cpp.insert("using namespace std;")
 
@@ -156,7 +176,12 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
     fields = fieldList.split(', ')
     for f in fields:
         if f != '':
-            varName = f.split(" ")[1]
+            varName = ''
+            if "> " in f:
+                varName = f.split("> ")[1]
+            else:
+                varName = f.split(" ")[1]
+
             Cpp.indentInsertDedent(f"this->{varName} = {varName};")
 
     Cpp.insert("}")
@@ -196,6 +221,7 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
         "Print": 'P',
         "Var": 'V',
         "Variable": 'v',
+        "Block": '{'
     }
     tag = mp.get(className, None)
     if tag:
@@ -230,22 +256,10 @@ def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
     Cpp = CodeAssembler()
     addTopOfFile(Cpp, baseClass)    
 
-    classes = [
-        "Assign",
-        "Binary",
-        "Unary", 
-        "Grouping",
-        "Boolean",
-        "Number",
-        "String",
-        "Nil",
-        "Variable"
-    ]
-
-    forwardDeclareClasses(Cpp, classes)
+    forwardDeclareClasses(Cpp, eclasses)
 
     defineVisitableGeneric(Cpp, 2)
-    defineVisitorGeneric(Cpp, classes, baseClass)
+    defineVisitorGeneric(Cpp, eclasses, baseClass)
 
     defineBaseClass(Cpp, baseClass)
     
@@ -263,15 +277,11 @@ def generateStmtHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
     Cpp = CodeAssembler()
     addTopOfFile(Cpp, baseClass, True)
 
-    classes = [
-        "Expression",
-        "Print",
-        "Var"
-    ]
+    
 
-    forwardDeclareClasses(Cpp, classes)
+    forwardDeclareClasses(Cpp, sclasses)
     defineVisitableGeneric(Cpp, 1, "VisitableStmt")
-    defineVisitorGeneric(Cpp, classes, baseClass, "Stmt")
+    defineVisitorGeneric(Cpp, sclasses, baseClass, "Stmt")
 
     defineBaseClass(Cpp, baseClass, stmt=True)
     for t in types:
@@ -300,7 +310,7 @@ types = [
     f"Nil       :",
     f"Variable  :  Token name",
 ]
-generateExprHeaderForTypes(dest, baseClass, types)
+# generateExprHeaderForTypes(dest, baseClass, types)
 
 
 
@@ -308,6 +318,7 @@ stmtBaseClass = "Stmt"
 sTypes = [
     "Expression     :  Expr* expr",
     "Print          :  Expr* expr",
-    "Var            :  Token name, Expr* initValue"
+    "Var            :  Token name, Expr* initValue",
+    "Block          :  vector < Stmt* > stmts"
 ]
-# generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)
+generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)

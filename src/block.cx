@@ -1,0 +1,26 @@
+var a = 22;
+var b = 10000.00;
+
+a = 2;
+b = 1;
+
+print "a is:";
+print a;
+print "b is:";
+print b;
+
+{
+    // shadow a and b in inner env
+    var a = 141;
+    var b = 1664;
+    var c;
+
+    c = a + b + 313;
+    print "c from inner block is:";
+    print c;
+}
+// check that they were properly shadowed
+print "a is still:";
+print a;
+print "b is still:";
+print b;

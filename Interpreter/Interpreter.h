@@ -348,6 +348,11 @@ public:
         env->define(e->name.lexeme, v);
     }
 
+    void visitBlockStmt(Block* e) {
+        executeBlock(e, new Environment(handler, env));
+    }
+
+
     void interpret(vector < Stmt* > stmts) {
         try {
             for (int i = 0; i < stmts.size(); ++i) {
@@ -360,6 +365,23 @@ public:
 
     void execute(Stmt *s) {
         s->accept(this);
+    }
+
+    void executeBlock(Block* e, Environment* scope) {
+        Environment* prev = env;
+        try {
+            // set new scope and execute statements in this scope
+            env = scope;
+            for (int i = 0; i < e->stmts.size(); ++i) {
+                execute(e->stmts[i]);
+            }
+        } catch (RuntimeError& err) {
+            // even in the case of an error, reset env
+            env = prev;
+            throw err;
+        }
+
+        env = prev;
     }
 
 private:

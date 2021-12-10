@@ -41,6 +41,8 @@ public:
     }
     
 private:
+
+
     // this handles variable declarations
     // or it routes to statements
     Stmt* declaration() {
@@ -67,8 +69,20 @@ private:
     // describes the statement types in this language
     Stmt* statement() {
         if (match(PRINT)) return printStatement();
-
+        if (match(LEFT_BRACE)) return new Block(block());
         return expressionStatement();
+    }
+
+    vector < Stmt* > block() {
+        vector < Stmt * > stmts;
+
+        while(!check(RIGHT_BRACE) && !isAtEnd()) {
+            // this allows variable bindings among other
+            // statement types in blocks
+            stmts.push_back(declaration());
+        }
+        consume(RIGHT_BRACE, "Expected '}' to terminate block.");
+        return stmts;
     }
 
     // print statement
