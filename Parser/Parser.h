@@ -68,6 +68,7 @@ private:
 
     // describes the statement types in this language
     Stmt* statement() {
+        if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
         if (match(LEFT_BRACE)) return new Block(block());
         return expressionStatement();
@@ -83,6 +84,20 @@ private:
         }
         consume(RIGHT_BRACE, "Expected '}' to terminate block.");
         return stmts;
+    }
+
+    Stmt* ifStatement() {
+        consume(LEFT_PAREN, "Expected '(' after 'if'.");
+        Expr* cond = expression();
+        consume(RIGHT_PAREN, "Expected ')' after if condition.");
+
+        // does this let me chain together else if statements??
+        Stmt* then = statement();
+        Stmt* else_ = NULL;
+        if (match(ELSE))
+            else_ = statement();
+
+        return new If(cond, then, else_);
     }
 
     // print statement

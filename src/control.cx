@@ -1,0 +1,17 @@
+var fileType = ".rs";
+
+// ew.
+if (fileType == ".cpp")
+    print "C++";
+else if (fileType == ".py")
+    print "Python";
+else if (fileType == ".go")
+    print "Golang";
+else if (fileType == ".nl")
+    print "Nala";
+else if (fileType == ".el")
+    print "Ellisp";
+else if (fileType == ".cx")
+    print "Croix";
+else
+    print "Undefined file type";

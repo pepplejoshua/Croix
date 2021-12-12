@@ -352,6 +352,16 @@ public:
         executeBlock(e, new Environment(handler, env));
     }
 
+    void visitIfStmt(If* e) {
+        // check condition to see if it is considered
+        // truthy
+        if (isTruthy(eval(e->cond))) {
+            execute(e->then);
+        } else if (e->else_ != NULL){
+            execute(e->else_);
+        }
+    }
+
 
     void interpret(vector < Stmt* > stmts) {
         try {

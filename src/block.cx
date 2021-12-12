@@ -1,26 +1,18 @@
-var a = 22;
-var b = 10000.00;
-
-a = 2;
-b = 1;
-
-print "a is:";
-print a;
-print "b is:";
-print b;
+var isOpen = true;
+var open;
+var close;
 
 {
-    // shadow a and b in inner env
-    var a = 141;
-    var b = 1664;
-    var c;
-
-    c = a + b + 313;
-    print "c from inner block is:";
-    print c;
+    // change one of the 2 varibles based on another variable
+    isOpen ? (open = "assigned") : (close = "assigned");
+    // shadow the changed variable, modify it and show it
+    var open = 200;
+    print "    inner open is:";
+    print open;
 }
-// check that they were properly shadowed
-print "a is still:";
-print a;
-print "b is still:";
-print b;
+
+// show the global variable
+print "outer open is:";
+print open;
+print "close is:";
+print close;

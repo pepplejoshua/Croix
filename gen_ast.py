@@ -35,6 +35,7 @@ sclasses = [
         "Print",
         "Var",
         "Block",
+        "If"
     ]
 
 eclasses = [
@@ -48,6 +49,21 @@ eclasses = [
         "Nil",
         "Variable"
     ]
+
+mp = {
+        "Binary" : 'b',
+        "Unary": 'U',
+        "Grouping": 'G',
+        "Boolean": 'B',
+        "Number": 'N',
+        "String": 's',
+        "Expression" : 'E',
+        "Print": 'P',
+        "Var": 'V',
+        "Variable": 'v',
+        "Block": '{',
+        "If" : 'i'
+    }
 
 # add top comments and include statements
 # aka boilerplate
@@ -210,19 +226,7 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
     
     Cpp.insert()
     Cpp.insert("char type() const {")
-    mp = {
-        "Binary" : 'b',
-        "Unary": 'U',
-        "Grouping": 'G',
-        "Boolean": 'B',
-        "Number": 'N',
-        "String": 's',
-        "Expression" : 'E',
-        "Print": 'P',
-        "Var": 'V',
-        "Variable": 'v',
-        "Block": '{'
-    }
+    
     tag = mp.get(className, None)
     if tag:
         Cpp.indentInsertDedent(f"return '{tag}';")
@@ -319,6 +323,7 @@ sTypes = [
     "Expression     :  Expr* expr",
     "Print          :  Expr* expr",
     "Var            :  Token name, Expr* initValue",
-    "Block          :  vector < Stmt* > stmts"
+    "Block          :  vector < Stmt* > stmts",
+    "If             :  Expr* cond, Stmt* then, Stmt* else_"
 ]
 generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)
