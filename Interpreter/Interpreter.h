@@ -315,6 +315,20 @@ public:
         return v;
     }
 
+    Expr* visitLogicalExpr(Logical* e) {
+        Expr* lhs = eval(e->left);
+
+        // perform short circuiting appropriately
+        // for OR, if the LHS is true, then return it
+        if (e->op.type == OR) {
+            if (isTruthy(lhs)) return lhs;
+        } else { // for AND, if LHS is false, then return it
+            if (!isTruthy(lhs)) return lhs;
+        }
+        
+        return eval(e->right);
+    }
+
     void showExpr(Expr* v) {
         if (v) {
             if (interacting)

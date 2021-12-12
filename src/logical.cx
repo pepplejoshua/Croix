@@ -1,0 +1,11 @@
+var greeting = "hi";
+// implicitly nil
+var pleasantries;
+
+var ch = pleasantries or greeting;
+
+print ch;
+print greeting or "hello";
+print nil or greeting;
+print greeting and "hello";
+print nil and greeting;

@@ -75,6 +75,13 @@ public:
         return e->name.lexeme;
     }
 
+    string visitLogicalExpr(Logical* e) {
+        vector < Expr * > exprs;
+        exprs.push_back(e->left);
+        exprs.push_back(e->right);
+        return parenthesize(e->op.String(), exprs);
+    }
+
 private:
     string parenthesize(string tag, vector < Expr * > exprs) {
         string o = "";

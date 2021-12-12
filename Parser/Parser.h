@@ -122,7 +122,7 @@ private:
 
     // handles the modification of variables
     Expr* assignment() {
-        Expr* target = ternary();
+        Expr* target = or_();
 
         if (match(EQUAL)) { // we are assigning
             Token eq = previous();
@@ -142,6 +142,30 @@ private:
         }
 
         return target; // we aren't assigning
+    }
+
+    Expr* or_() {
+        Expr* e = and_();
+        
+        while (match(OR)) {
+            Token op = previous();
+            Expr* r = and_();
+            e = new Logical(e, op, r);
+        }
+
+        return e;
+    }
+
+    Expr* and_() {
+        Expr* e = ternary();
+
+        while (match(AND)) {
+            Token op = previous();
+            Expr* r = ternary();
+            e = new Logical(e, op, r);
+        }
+
+        return e;
     }
 
     // potential solution for ternary problem
