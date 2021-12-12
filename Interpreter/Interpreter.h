@@ -347,8 +347,12 @@ public:
     }
 
     void visitPrintStmt(Print* e) {
-        Expr* v = eval(e->expr);
-        showExpr(v);   
+        if (e->expr != NULL) {
+            Expr* v = eval(e->expr);
+            showExpr(v);   
+        } else {
+            cout << endl;
+        }
     }
 
     void visitVarStmt(Var* e) {
@@ -376,6 +380,11 @@ public:
         }
     }
 
+    void visitWhileStmt(While* e) {
+        while (isTruthy(eval(e->cond))) {
+            execute(e->body);
+        }
+    }
 
     void interpret(vector < Stmt* > stmts) {
         try {

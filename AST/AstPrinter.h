@@ -64,7 +64,7 @@ public:
     }
 
     string visitStringExpr(String* e) {
-        return "'" + e->value + "'";
+        return e->value;
     }
 
     string visitNilExpr(Nil* e) {

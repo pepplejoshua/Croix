@@ -70,6 +70,8 @@ private:
     Stmt* statement() {
         if (match(IF)) return ifStatement();
         if (match(PRINT)) return printStatement();
+        if (match(WHILE)) return whileStatement();
+        if (match(FOR)) return forStatement();
         if (match(LEFT_BRACE)) return new Block(block());
         return expressionStatement();
     }
@@ -86,12 +88,86 @@ private:
         return stmts;
     }
 
+    // for '(' (varDecl | exprStmt | ';') expression?1 ';' expression?2 ')' Stmt
+    // (varDecl | exprStmt | ';') -> init
+    // expression?1 -> cond
+    // expression?2 -> increment
+    Stmt* forStatement() {
+        consume(LEFT_PAREN, "Expected '(' after 'for'.");
+        
+        // handle init or lack of
+        Stmt* init = NULL;
+        if (match(SEMICOLON)) { // no init 
+
+        } else if (match(VAR)) { // init var declaration
+            init = varDeclaration();
+        } else { // we could then take an ExprStmt, like an already declared variable
+            init = expressionStatement();
+        }
+        
+        Expr* cond = NULL;
+        // check to see if clause was omitted
+        if (!check(SEMICOLON))
+            cond = expression();
+        consume(SEMICOLON, "Expected ';' after loop condition.");
+
+        Expr* increment = NULL;
+        // check to see if increment was omitted
+        if (!check(RIGHT_PAREN))
+            increment = expression();
+        consume(RIGHT_PAREN, "Expected ')' after for clauses.");
+        Stmt* body = statement();
+
+        // desugar for loop into while loop in a block statement
+        // for (a?; b?; c?) d becomes:
+        // {
+        //      a?;
+        //      while (b? | true) {
+        //          d;
+        //          c?;
+        //      }
+        // }
+
+        // first, add increment statement to end of body and put them into a block statement
+        vector < Stmt* > stmts;
+        stmts.push_back(body);
+        stmts.push_back(new Expression(increment));
+        Stmt* block = new Block(stmts);
+
+        // then construct a while loop with cond and block as its body
+        if (cond == NULL) cond = new Boolean(true);
+        Stmt* while_ = new While(cond, block);
+
+        // finally create an enclosing block if there is an initializer
+        // if there isn't, return the while statement
+        if (init == NULL) {
+            body = while_;
+        } else {
+            vector < Stmt* > desugared_for;
+            desugared_for.push_back(init);
+            desugared_for.push_back(while_);
+            body = new Block(desugared_for);
+        }
+        return body;
+    }
+
+    Stmt* whileStatement() {
+        consume(LEFT_PAREN, "Expected '(' after 'while'.");
+        Expr* cond = expression();
+        consume(RIGHT_PAREN, "Expected ')' after while condition.");
+
+        Stmt* body = statement();
+
+        return new While(cond, body);
+    }
+
     Stmt* ifStatement() {
         consume(LEFT_PAREN, "Expected '(' after 'if'.");
         Expr* cond = expression();
         consume(RIGHT_PAREN, "Expected ')' after if condition.");
 
         // does this let me chain together else if statements??
+        // yes it doesssss
         Stmt* then = statement();
         Stmt* else_ = NULL;
         if (match(ELSE))
@@ -102,8 +178,14 @@ private:
 
     // print statement
     Stmt* printStatement() {
-        Expr *e = expression();
-        consume(SEMICOLON, "Expected ';' to terminate print statement");
+        Expr *e = NULL;
+        if (match(SEMICOLON)) {
+            // do nothing
+        } else {
+            e = expression();
+            consume(SEMICOLON, "Expected ';' to terminate print statement");
+        }
+            
         return new Print(e);
     }
 

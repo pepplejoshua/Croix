@@ -20,6 +20,7 @@ class Print;
 class Var;
 class Block;
 class If;
+class While;
 
 // class to be inherited by abstract base class
 // to allow the template defined types visit this class
@@ -40,6 +41,7 @@ public:
     virtual ReturnValue visitVarStmt(Var*) = 0;
     virtual ReturnValue visitBlockStmt(Block*) = 0;
     virtual ReturnValue visitIfStmt(If*) = 0;
+    virtual ReturnValue visitWhileStmt(While*) = 0;
 };
 
 // anything that is an ExprVisitor can visit this class
@@ -137,4 +139,23 @@ public:
     Expr* cond;
     Stmt* then;
     Stmt* else_;
+};
+
+class While : public Stmt {
+public:
+    While(Expr* cond, Stmt* body) {
+        this->cond = cond;
+        this->body = body;
+    }
+    
+    void accept(StmtVisitor< void >* ev) {
+        ev->visitWhileStmt(this);
+    }
+    
+    char type() const {
+        return 'W';
+    }
+
+    Expr* cond;
+    Stmt* body;
 };

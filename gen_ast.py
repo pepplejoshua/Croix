@@ -35,7 +35,8 @@ sclasses = [
         "Print",
         "Var",
         "Block",
-        "If"
+        "If",
+        "While"
     ]
 
 eclasses = [
@@ -64,7 +65,8 @@ mp = {
         "Variable": 'v',
         "Block": '{',
         "If" : 'i',
-        "Logical": 'L'
+        "Logical": 'L',
+        "While": 'W'
     }
 
 # add top comments and include statements
@@ -317,7 +319,7 @@ types = [
     f"Variable  :  Token name",
     f"Logical   : {baseClass}* left, Token op, {baseClass}* right"
 ]
-generateExprHeaderForTypes(dest, baseClass, types)
+# generateExprHeaderForTypes(dest, baseClass, types)
 
 
 
@@ -327,6 +329,7 @@ sTypes = [
     "Print          :  Expr* expr",
     "Var            :  Token name, Expr* initValue",
     "Block          :  vector < Stmt* > stmts",
-    "If             :  Expr* cond, Stmt* then, Stmt* else_"
+    "If             :  Expr* cond, Stmt* then, Stmt* else_",
+    "While          :  Expr* cond, Stmt* body",
 ]
-# generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)
+generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)
