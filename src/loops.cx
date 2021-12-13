@@ -23,7 +23,7 @@ for (var j = 1; j <= 10; j = j + 1)
 // }
 
 print;
-print "Fibonacci seq up to 21 elements:"
+print "Fibonacci seq up to 21 elements:";
 var a = 0;
 var temp;
 

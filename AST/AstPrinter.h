@@ -8,15 +8,6 @@
 
 using namespace std;
 
-class Expr;
-class Binary;
-class Unary;
-class Grouping;
-class Boolean;
-class Number;
-class String;
-class Nil;
-
 class AstPrinter : public ExprVisitor<string> {
 public:
     AstPrinter() {}
@@ -80,6 +71,11 @@ public:
         exprs.push_back(e->left);
         exprs.push_back(e->right);
         return parenthesize(e->op.String(), exprs);
+    }
+
+    string visitCallExpr(Call* e) {
+        // return e->toString();
+        return parenthesize("fun " + print(e->callee), e->arguments);
     }
 
 private:

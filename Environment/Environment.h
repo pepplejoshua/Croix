@@ -15,25 +15,25 @@ public:
     }
 
     // defines a variable local to the present environment
-    void define(string varName, Expr* value) {
-        map < string, Expr* >::iterator existing = values.find(varName);
+    void define(string varName, Storable* value) {
+        map < string, Storable* >::iterator existing = values.find(varName);
 
         if (existing != values.end()) {
             values.erase(varName);
         }
-        values.insert(pair< string, Expr* >(varName, value));
+        values.insert(pair< string, Storable* >(varName, value));
     }
 
-    Expr* localGet(Token name) {
-        map < string, Expr* >::iterator existing = values.find(name.lexeme);
+    Storable* localGet(Token name) {
+        map < string, Storable* >::iterator existing = values.find(name.lexeme);
 
         if (existing != values.end()) return existing->second; // if we find it in this env, return its value
 
         return NULL;
     }
 
-    Expr* get(Token name) {
-        Expr* v = localGet(name); // if we can find it locally
+    Storable* get(Token name) {
+        Storable* v = localGet(name); // if we can find it locally
         if (v) return v;
 
         // potential iterative solution, might be faster than recursive solution
@@ -50,7 +50,7 @@ public:
         throw RuntimeError(name, "Undefined variable reference '" + name.lexeme + "'.");
     }
 
-    void assign(Token varName, Expr* value) {
+    void assign(Token varName, Storable* value) {
         if (localGet(varName)) { // if this is an existing local variable, call define to locally reset it
             define(varName.lexeme, value);
             return;
@@ -66,6 +66,7 @@ public:
 
 private:
     ErrHandler* handler;
-    map < string, Expr* > values;
+    // map < string, Expr* > values;
+    map < string, Storable* > values;
     Environment* enclosing;
 };
