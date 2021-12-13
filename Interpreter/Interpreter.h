@@ -6,6 +6,7 @@
 #include "../AST/Stmt.h"
 #include "../AST/TokenTypes.h"
 #include "../AST/AstPrinter.h"
+#include "../AST/Callable.h"
 #include "../Helpers/ErrHandler.h"
 #include "../Environment/Environment.h"
 
@@ -110,7 +111,7 @@ bool areNumbersOrStrings(Token op, Expr *a, Expr *b) {
     throw RuntimeError(op, "Operands must be 2 Numbers or 2 Strings.");
 }
 
-class Interpreter : public ExprVisitor<Expr*>, public StmtVisitor<void> {
+class Interpreter : public CInterpreter {
 public:
     Interpreter(ErrHandler* e, bool interactiveMode=false, Environment* pEnv=NULL) { 
         handler = e;
@@ -120,23 +121,26 @@ public:
             env = pEnv;
         else
             env = new Environment(e);
+
+        
+        env->define("clock", new Clock());
     }
 
-    Expr* eval(Expr* in) {
+    Storable* eval(Expr* in) {
         return in->accept(this);
     }
 
-    Expr* visitAssignExpr(Assign* e) {
-        Expr *v = eval(e->value);
+    Storable* visitAssignExpr(Assign* e) {
+        Storable *v = eval(e->value);
         env->assign(e->name, v);
         return v;
     }
 
-    Expr* visitBinaryExpr(Binary* e) {
-        Expr *l = eval(e->left);
+    Storable* visitBinaryExpr(Binary* e) {
+        Expr *l = dynamic_cast<Expr *>(eval(e->left));
         Expr *r;
         if (e->op.type != QUESTION_MARK)
-            r = eval(e->right);
+            r = dynamic_cast<Expr *>(eval(e->right));
 
         switch(e->op.type) {
             case GREATER: {
@@ -267,8 +271,8 @@ public:
         }
     }  
 
-    Expr* visitUnaryExpr(Unary* e) {
-        Expr *r = eval(e->right);
+    Storable* visitUnaryExpr(Unary* e) {
+        Expr *r = dynamic_cast<Expr *>(eval(e->right));
 
         switch(e->op.type) {
             case NOT: {
@@ -290,33 +294,35 @@ public:
         }
     }
 
-    Expr* visitGroupingExpr(Grouping* e) {
+    Storable* visitGroupingExpr(Grouping* e) {
         return eval(e->expr);
     }
 
-    Expr* visitBooleanExpr(Boolean* e) {
+    Storable* visitBooleanExpr(Boolean* e) {
         return e;
     }
 
-    Expr* visitNumberExpr(Number* e) {
+    Storable* visitNumberExpr(Number* e) {
         return e;
     }
 
-    Expr* visitStringExpr(String* e) {
+    Storable* visitStringExpr(String* e) {
         return e;
     }
 
-    Expr* visitNilExpr(Nil* e) {
+    Storable* visitNilExpr(Nil* e) {
         return e;
     }
 
-    Expr* visitVariableExpr(Variable* e) {
-        Expr *v = env->get(e->name);
-        return v;
+    Storable* visitVariableExpr(Variable* e) {
+        Storable *v = env->get(e->name);
+        // if (v->storedType() == "Expr")
+        //     return dynamic_cast< Expr * >(v);
+        return v;    
     }
 
-    Expr* visitLogicalExpr(Logical* e) {
-        Expr* lhs = eval(e->left);
+    Storable* visitLogicalExpr(Logical* e) {
+        Expr* lhs = dynamic_cast<Expr *>(eval(e->left));
 
         // perform short circuiting appropriately
         // for OR, if the LHS is true, then return it
@@ -327,6 +333,29 @@ public:
         }
         
         return eval(e->right);
+    }
+
+    Storable* visitCallExpr(Call* e) {    
+        Storable* callee = eval(e->callee);
+        vector < Expr* > args;
+
+        for (int i = 0; i < e->arguments.size(); ++i) {
+            args.push_back(dynamic_cast<Expr *>(eval(e->arguments[i])));
+        }
+
+        Callable* fn = dynamic_cast< Callable *>(callee);
+
+        if (fn == NULL) // not a callable, since it couldn't cast
+            throw RuntimeError(e->rParen, "Can only call functions and classes.");
+
+        if (fn->arity() != args.size()) { // wrong function arity
+            string eMsg = "Expected ";
+            eMsg += to_string(fn->arity()) + " arguments but got ";
+            eMsg += to_string(args.size()) + ".";
+            throw RuntimeError(e->rParen, eMsg);
+        }
+
+        return fn->call(this, args);    
     }
 
     void showExpr(Expr* v) {
@@ -340,7 +369,7 @@ public:
 
     void visitExpressionStmt(Expression* e) {
         if (interacting) {
-            Expr* v = eval(e->expr);
+            Expr* v = dynamic_cast<Expr *>(eval(e->expr));
             showExpr(v); 
         } else
             eval(e->expr);
@@ -348,15 +377,19 @@ public:
 
     void visitPrintStmt(Print* e) {
         if (e->expr != NULL) {
-            Expr* v = eval(e->expr);
-            showExpr(v);   
+            Storable* v = eval(e->expr);
+
+            if (v->storedType() == "Expr")
+                showExpr(dynamic_cast<Expr *>(v));   
+            else
+                cout << dynamic_cast<Callable *>(v)->toString() << endl;
         } else {
             cout << endl;
         }
     }
 
     void visitVarStmt(Var* e) {
-        Expr* v = NULL;
+        Storable* v = NULL;
         if (e->initValue) {
             v = eval(e->initValue);
         } else {
@@ -373,7 +406,7 @@ public:
     void visitIfStmt(If* e) {
         // check condition to see if it is considered
         // truthy
-        if (isTruthy(eval(e->cond))) {
+        if (isTruthy(dynamic_cast<Expr *>(eval(e->cond)))) {
             execute(e->then);
         } else if (e->else_ != NULL){
             execute(e->else_);
@@ -381,9 +414,14 @@ public:
     }
 
     void visitWhileStmt(While* e) {
-        while (isTruthy(eval(e->cond))) {
+        while (isTruthy(dynamic_cast<Expr *>(eval(e->cond)))) {
             execute(e->body);
         }
+    }
+
+    void visitFunctionStmt(Function* e) {
+        UserFunction* f = new UserFunction(e);
+        env->define(e->fnName.lexeme, f);
     }
 
     void interpret(vector < Stmt* > stmts) {
@@ -416,10 +454,4 @@ public:
 
         env = prev;
     }
-
-private:
-    ErrHandler* handler;
-    AstPrinter pr;
-    bool interacting;
-    Environment* env;
 };

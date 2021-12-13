@@ -36,7 +36,8 @@ sclasses = [
         "Var",
         "Block",
         "If",
-        "While"
+        "While",
+        "Function"
     ]
 
 eclasses = [
@@ -49,7 +50,8 @@ eclasses = [
         "String",
         "Nil",
         "Variable",
-        "Logical"
+        "Logical",
+        "Call"
     ]
 
 mp = {
@@ -66,7 +68,9 @@ mp = {
         "Block": '{',
         "If" : 'i',
         "Logical": 'L',
-        "While": 'W'
+        "While": 'W',
+        "Call": 'C',
+        "Function": 'F'
     }
 
 # add top comments and include statements
@@ -158,7 +162,7 @@ def defineBaseClass(Cpp: CodeAssembler, baseClass: str, stmt=False):
     if stmt:
         returns = ["void"]
     else:
-        returns = ["string", f"{baseClass} *"]
+        returns = ["string", "Storable *"]
 
     if stmt:
         inher = "public VisitableStmt < "
@@ -177,9 +181,15 @@ def defineBaseClass(Cpp: CodeAssembler, baseClass: str, stmt=False):
             inher += ', '
     inher += " >"
 
-    Cpp.insert(f"class {baseClass} : {inher} " + "{")
+    Cpp.insert(f"class {baseClass} : {inher}" + ", public Storable {")
     Cpp.insert("public:")
     Cpp.indentInsertDedent("virtual char type() const = 0;")
+    Cpp.insert();
+    Cpp.indentInsertDedent("string storedType() {")
+    Cpp.indent()
+    Cpp.indentInsertDedent('return "Expr";')
+    Cpp.dedent()
+    Cpp.indentInsertDedent("}")
     Cpp.insert("};")
 
 def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: str, stmt: bool = False):
@@ -212,7 +222,7 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
     if stmt:
         returns = ["void"]
     else:
-        returns = ["string", f"{baseClass}*"]
+        returns = ["string", f"Storable *"]
     
     for r in returns:
         Cpp.insert()
@@ -253,6 +263,17 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
     Cpp.insert("};")
     Cpp.dedent()
 
+def defineStorableInterface(Cpp: CodeAssembler):
+    Cpp.insert()
+    Cpp.insert("// used by Environment to store both Exprs")
+    Cpp.insert("// and Callables like native functions and")
+    Cpp.insert("// user defined functions")
+    Cpp.insert()
+    Cpp.insert("class Storable {") 
+    Cpp.insert("public:")
+    Cpp.indentInsertDedent("virtual string storedType() = 0;")
+    Cpp.insert("};")
+
 def writeOut(path: str, Cpp: CodeAssembler):
     print("writing to", path)
     with open(path, 'w+') as astFile:
@@ -268,6 +289,7 @@ def generateExprHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
 
     defineVisitableGeneric(Cpp, 2)
     defineVisitorGeneric(Cpp, eclasses, baseClass)
+    defineStorableInterface(Cpp)
 
     defineBaseClass(Cpp, baseClass)
     
@@ -284,8 +306,6 @@ def generateStmtHeaderForTypes(outDir: str, baseClass: str, types: list[str]):
 
     Cpp = CodeAssembler()
     addTopOfFile(Cpp, baseClass, True)
-
-    
 
     forwardDeclareClasses(Cpp, sclasses)
     defineVisitableGeneric(Cpp, 1, "VisitableStmt")
@@ -308,18 +328,19 @@ if (argc != 2):
 dest = sys.argv[1]
 baseClass = "Expr"
 types = [ 
-    f"Assign    :  Token name, {baseClass}* value",
-    f"Binary    :  {baseClass}* left, Token op, {baseClass}* right",
-    f"Unary     :  Token op, {baseClass}* right",
-    f"Grouping  :  {baseClass}* expr",
-    f"Boolean   :  bool value",
-    f"Number    :  double value",
-    f"String    :  string value",
-    f"Nil       :",
-    f"Variable  :  Token name",
-    f"Logical   : {baseClass}* left, Token op, {baseClass}* right"
+    f"Assign       :  Token name, {baseClass}* value",
+    f"Binary       :  {baseClass}* left, Token op, {baseClass}* right",
+    f"Unary        :  Token op, {baseClass}* right",
+    f"Grouping     :  {baseClass}* expr",
+    f"Boolean      :  bool value",
+    f"Number       :  double value",
+    f"String       :  string value",
+    f"Nil          :",
+    f"Variable     :  Token name",
+    f"Logical      : {baseClass}* left, Token op, {baseClass}* right",
+    f"Call         : Expr* callee, Token rParen, vector < Expr* > arguments"
 ]
-# generateExprHeaderForTypes(dest, baseClass, types)
+generateExprHeaderForTypes(dest, baseClass, types)
 
 
 
@@ -331,5 +352,6 @@ sTypes = [
     "Block          :  vector < Stmt* > stmts",
     "If             :  Expr* cond, Stmt* then, Stmt* else_",
     "While          :  Expr* cond, Stmt* body",
+    "Function       :  Token fnName, vector < Token > params, Block* body"
 ]
 generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)

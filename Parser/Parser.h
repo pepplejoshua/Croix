@@ -41,12 +41,11 @@ public:
     }
     
 private:
-
-
     // this handles variable declarations
     // or it routes to statements
     Stmt* declaration() {
         try {
+            if (match(FUN)) return funcDeclaration("function");
             if (match(VAR)) return varDeclaration(); 
             return statement();
         } catch (ParseError e) {
@@ -54,6 +53,26 @@ private:
             return NULL;
         }
     }   
+
+    Stmt* funcDeclaration(string kind) {
+        Token fnName = consume(IDENTIFIER, "Expected " + kind + " name.");
+        vector < Token > params;
+
+        consume(LEFT_PAREN, "Expected '(' after " + kind + " name.");
+        if (!check(RIGHT_PAREN)) { // we do have params for this func definition        
+            do {
+                if (params.size() >= 255) 
+                    error(peek(), "Cannot have more than 255 parameters.");
+
+                params.push_back(consume(IDENTIFIER, "Expected parameter name."));
+            } while (match(COMMA));
+        }
+        consume(RIGHT_PAREN, "Expected ')' after parameters.");
+
+        consume(LEFT_BRACE, "Expected '{' before " + kind + " body.");
+        vector < Stmt* > body = block();
+        return new Function(fnName, params, new Block(body));
+    }
 
     Stmt* varDeclaration() {
         Token variableName = consume(IDENTIFIER, "Expected variable name.");
@@ -182,7 +201,7 @@ private:
         if (match(SEMICOLON)) {
             // do nothing
         } else {
-            e = expression();
+            e = comma();
             consume(SEMICOLON, "Expected ';' to terminate print statement");
         }
             
@@ -191,9 +210,24 @@ private:
 
     // expression statement
     Stmt* expressionStatement() {
-        Expr *e = expression();
+        Expr *e = comma();
         consume(SEMICOLON, "Expected ';' to terminate expression statement");
         return new Expression(e);
+    }
+
+
+    // read 1 expr or more separated by ,
+    Expr* comma() {
+        Expr *e = expression();
+
+        // it is equally a binary operator
+        while (match(COMMA)) {
+            Token op = previous();
+            Expr *r = expression();
+            e = new Binary(e, op, r);
+        }
+
+        return e;
     }
 
     // PARSE HIERARCHY
@@ -217,7 +251,6 @@ private:
                     break;
                 }
                 default: {
-                    cout << target->type() << endl;
                     error(eq, "Cannot assign to specified target.");
                 }
             }
@@ -255,7 +288,7 @@ private:
     // a ? b : c becomes:
     // Binary("?", a, Binary(":", b, c))
     Expr* ternary() {
-        Expr* e = comma();
+        Expr* e = equality();
 
         // we have ternary expr
         if (match(QUESTION_MARK)) {
@@ -273,20 +306,6 @@ private:
                     r
                 )
             );
-        }
-
-        return e;
-    }
-
-    // read 1 expr or more separated by ,
-    Expr* comma() {
-        Expr *e = equality();
-
-        // it is equally a binary operator
-        while (match(COMMA)) {
-            Token op = previous();
-            Expr *r = equality();
-            e = new Binary(e, op, r);
         }
 
         return e;
@@ -400,8 +419,42 @@ private:
             return new Unary(op, r);
         }
 
-        // not a unary operation so match primary
-        return primary();
+        // not a unary operation so match call or primary Exprs
+        return call();
+    }
+
+    Expr* call() {
+        Expr* e = primary();
+
+        while (match(LEFT_PAREN)) {
+            e = buildCallExpr(e);
+        }
+
+        // Nystrom's version
+        // while (true) {
+        //     if (match(LEFT_PAREN))
+        //         e = buildCallExpr(e);
+        //     else
+        //         break;
+        // }
+        return e;
+    }
+
+    Expr* buildCallExpr(Expr* callee) {
+        vector < Expr* > arguments;
+
+        if (!check(RIGHT_PAREN)) { // we have arguments to pass to this call, process them
+            do {
+                // restrict number of arguments that can be processed
+                if (arguments.size() >= 255)
+                    error(peek(), "Cannot have more than 255 arguments.");
+                arguments.push_back(expression());
+            } while (match(COMMA)); // look for a comma to continue parsing more arguments
+        }
+
+        // use this closing operator to report errors
+        Token op = consume(RIGHT_PAREN, "Expected ')' after arguments.");
+        return new Call(callee, op, arguments);
     }
 
     Expr* primary() {
