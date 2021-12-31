@@ -1,6 +1,5 @@
 import sys
 from datetime import datetime
-from typing import List
 
 class CodeAssembler:
     def __init__(ca) -> None:
@@ -37,7 +36,8 @@ sclasses = [
         "Block",
         "If",
         "While",
-        "Function"
+        "Function",
+        "Return"
     ]
 
 eclasses = [
@@ -70,7 +70,8 @@ mp = {
         "Logical": 'L',
         "While": 'W',
         "Call": 'C',
-        "Function": 'F'
+        "Function": 'F',
+        "Return": 'R',
     }
 
 # add top comments and include statements
@@ -181,15 +182,21 @@ def defineBaseClass(Cpp: CodeAssembler, baseClass: str, stmt=False):
             inher += ', '
     inher += " >"
 
-    Cpp.insert(f"class {baseClass} : {inher}" + ", public Storable {")
+    if stmt:
+        Cpp.insert(f"class {baseClass} : {inher} " + "{")
+    else:
+        Cpp.insert(f"class {baseClass} : {inher}" + ", public Storable {")
     Cpp.insert("public:")
     Cpp.indentInsertDedent("virtual char type() const = 0;")
+    if not stmt:
+        Cpp.insert();
+        Cpp.indentInsertDedent("string storedType() {")
+        Cpp.indent()
+        Cpp.indentInsertDedent('return "Expr";')
+        Cpp.dedent()
+        Cpp.indentInsertDedent("}")
     Cpp.insert();
-    Cpp.indentInsertDedent("string storedType() {")
-    Cpp.indent()
-    Cpp.indentInsertDedent('return "Expr";')
-    Cpp.dedent()
-    Cpp.indentInsertDedent("}")
+    Cpp.indentInsertDedent(f"virtual ~{baseClass}() " + "{ }")
     Cpp.insert("};")
 
 def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: str, stmt: bool = False):
@@ -208,12 +215,30 @@ def defineType(Cpp: CodeAssembler, baseClass: str, className: str, fieldList: st
         if f != '':
             varName = ''
             if "> " in f:
-                varName = f.split("> ")[1]
+                varName = f.split("> ")[1].strip()
             else:
-                varName = f.split(" ")[1]
+                varName = f.split(" ")[1].strip()
 
             Cpp.indentInsertDedent(f"this->{varName} = {varName};")
+    Cpp.insert("}")
 
+    Cpp.insert()
+    # destructor
+    Cpp.insert(f"~{className}() " + "{")
+    # destructor body
+    for f in fields:
+        if '*' in f and '>' not in f: # is a pointer, delete it
+            # print(f"{f} is a pointer")
+            member = f.split('*')[1].strip()
+            Cpp.indentInsertDedent(f"delete this->{member};")
+        if 'vector' in f and '*' in f: # a vector of pointers, delete them
+            vec = f.split(">")[1].strip()
+            Cpp.indentInsertDedent(f"for(int i = 0; i < {vec}.size(); ++i) " + "{")
+            Cpp.indent()
+            Cpp.indentInsertDedent(f"delete {vec}[i];")
+            Cpp.dedent()
+            Cpp.indentInsertDedent("}")
+            # print(vec)
     Cpp.insert("}")
 
     # generate necessary accept functions
@@ -352,6 +377,7 @@ sTypes = [
     "Block          :  vector < Stmt* > stmts",
     "If             :  Expr* cond, Stmt* then, Stmt* else_",
     "While          :  Expr* cond, Stmt* body",
-    "Function       :  Token fnName, vector < Token > params, Block* body"
+    "Function       :  Token fnName, vector < Token > params, Block* body",
+    "Return         :  Token ret, Expr* value"
 ]
 generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)

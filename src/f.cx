@@ -1,0 +1,16 @@
+fun test(level, num) {
+    print "Showing";
+    print level;
+    print num;
+    print;
+
+    if (num <= 0) {
+        return num;
+    } else {
+        test(level + 1, num - 1);
+        print "Returned";
+        print num;
+    }
+}
+
+print test(0, 5);

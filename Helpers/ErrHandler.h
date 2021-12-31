@@ -2,6 +2,7 @@
 
 #include <string>
 #include "../AST/TokenTypes.h"
+#include "../AST/Expr.h"
 
 using namespace std;
 
@@ -21,6 +22,19 @@ public:
  };
 
 class ParseError : public exception { };
+
+class Break : public runtime_error {
+
+};
+
+class ReturnExcept : public exception {
+public:
+    ReturnExcept(Storable* v) {
+        value = v;
+    }
+
+    Storable* value;
+};
 
 class ErrHandler {
 public:

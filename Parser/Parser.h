@@ -92,6 +92,7 @@ private:
         if (match(WHILE)) return whileStatement();
         if (match(FOR)) return forStatement();
         if (match(LEFT_BRACE)) return new Block(block());
+        if (match(RETURN)) return returnStatement();
         return expressionStatement();
     }
 
@@ -105,6 +106,16 @@ private:
         }
         consume(RIGHT_BRACE, "Expected '}' to terminate block.");
         return stmts;
+    }
+
+    Stmt* returnStatement() {
+        Token ret = previous();
+        Expr* val = NULL;
+        if (!check(SEMICOLON)) { // check if we have some return value
+            val = expression();
+        }
+        consume(SEMICOLON, "Expected ';' after return value.");
+        return new Return(ret, val);
     }
 
     // for '(' (varDecl | exprStmt | ';') expression?1 ';' expression?2 ')' Stmt

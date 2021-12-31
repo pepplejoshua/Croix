@@ -122,7 +122,6 @@ public:
         else
             env = new Environment(e);
 
-        
         env->define("clock", new Clock());
     }
 
@@ -200,7 +199,7 @@ public:
                     if (isN(l)) {
                         double rn = dynamic_cast<Number *>(r)->value;
                         double ln = dynamic_cast<Number *>(l)->value;
-                    
+
                         return new Number(ln+rn);
                     } else {
                         string rn = dynamic_cast<String *>(r)->value;
@@ -316,8 +315,6 @@ public:
 
     Storable* visitVariableExpr(Variable* e) {
         Storable *v = env->get(e->name);
-        // if (v->storedType() == "Expr")
-        //     return dynamic_cast< Expr * >(v);
         return v;    
     }
 
@@ -337,10 +334,10 @@ public:
 
     Storable* visitCallExpr(Call* e) {    
         Storable* callee = eval(e->callee);
-        vector < Expr* > args;
+        vector < Storable* > args;
 
         for (int i = 0; i < e->arguments.size(); ++i) {
-            args.push_back(dynamic_cast<Expr *>(eval(e->arguments[i])));
+            args.push_back(eval(e->arguments[i]));
         }
 
         Callable* fn = dynamic_cast< Callable *>(callee);
@@ -355,7 +352,8 @@ public:
             throw RuntimeError(e->rParen, eMsg);
         }
 
-        return fn->call(this, args);    
+        Storable* res = fn->call(this, args);
+        return res;    
     }
 
     void showExpr(Expr* v) {
@@ -379,10 +377,12 @@ public:
         if (e->expr != NULL) {
             Storable* v = eval(e->expr);
 
-            if (v->storedType() == "Expr")
-                showExpr(dynamic_cast<Expr *>(v));   
-            else
-                cout << dynamic_cast<Callable *>(v)->toString() << endl;
+            if (v != NULL) {
+                if (v->storedType() == "Expr")
+                    showExpr(dynamic_cast<Expr *>(v));   
+                else
+                    cout << dynamic_cast<Callable *>(v)->toString() << endl;
+            }
         } else {
             cout << endl;
         }
@@ -420,8 +420,15 @@ public:
     }
 
     void visitFunctionStmt(Function* e) {
-        UserFunction* f = new UserFunction(e);
+        UserFunction* f = new UserFunction(e, env);
         env->define(e->fnName.lexeme, f);
+    }
+
+    void visitReturnStmt(Return* e) {
+        Storable* rVal = NULL;
+        if (e->value != NULL) rVal = eval(e->value);
+
+        throw new ReturnExcept(rVal);
     }
 
     void interpret(vector < Stmt* > stmts) {
@@ -438,20 +445,26 @@ public:
         s->accept(this);
     }
 
-    void executeBlock(Block* e, Environment* scope) {
-        Environment* prev = env;
-        try {
-            // set new scope and execute statements in this scope
-            env = scope;
-            for (int i = 0; i < e->stmts.size(); ++i) {
-                execute(e->stmts[i]);
-            }
-        } catch (RuntimeError& err) {
-            // even in the case of an error, reset env
-            env = prev;
-            throw err;
+void executeBlock(Block* e, Environment* scope) {
+    Environment* prev = env;
+    try {
+        // set new scope and execute statements in this scope
+        env = scope;
+        for (int i = 0; i < e->stmts.size(); ++i) {
+            execute(e->stmts[i]);
         }
-
+    } catch (RuntimeError& err) {
+        // even in the case of an error, reset env
         env = prev;
+        throw err;
+    } catch (ReturnExcept* r) { 
+        // cause of the dumbest/best 1 off error I have ever experienced in my life
+        // I forgot to reset the environment before returning higher up the nested 
+        // environment path. I fucking hate C++ pointers. Fuckkkkkkkkkkkkkkkkkkkkk
+        env = prev;
+        throw r;
     }
+
+    env = prev;
+}
 };

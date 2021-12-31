@@ -5,6 +5,7 @@
 #include "Expr.h"
 #include "../Environment/Environment.h"
 #include "../Interpreter/Interpreter.h"
+#include "../Helpers/ErrHandler.h"
 #include <time.h>
 
 using namespace std;
@@ -20,7 +21,7 @@ public:
 
 class Callable : public Storable {
 public:
-    virtual Expr* call(CInterpreter* in, vector < Expr* > args) = 0;
+    virtual Storable* call(CInterpreter* in, vector < Storable* > args) = 0;
     virtual int arity() = 0;
     virtual string toString() = 0;
     string storedType() {
@@ -41,7 +42,7 @@ public:
 };
 
 class Clock : public NativeFn {
-    Expr* call(CInterpreter* in, vector < Expr* > args) {
+    Storable* call(CInterpreter* in, vector < Storable* > args) {
         time_t tme;
         time(&tme);
         return new Number((double) tme);
@@ -50,8 +51,9 @@ class Clock : public NativeFn {
 
 class UserFunction : public Callable {
 public:
-    UserFunction(Function* decl) {
+    UserFunction(Function* decl, Environment* clos) {
         this->decl = decl;
+        this->closure = clos;
     }    
 
     int arity() {
@@ -62,15 +64,25 @@ public:
         return "<fn " + decl->fnName.lexeme + ">";
     }
 
-    Expr* call(CInterpreter* in, vector < Expr* > args) {
-        Environment* en = new Environment(in->handler, in->env);
+    Storable* call(CInterpreter* in, vector < Storable* > args) {
+        Environment* en = new Environment(in->handler, closure);
         for (int i = 0; i < decl->params.size(); ++i) {
+            // cout << en << endl;
+            // cout << decl->params[i].lexeme << endl;
+            // cout << dynamic_cast<Number*>(args[i])->value << endl;
+            // cout << endl;
             en->define(decl->params[i].lexeme, args[i]);
         }
 
-        in->executeBlock(decl->body, en);
+        try {
+            in->executeBlock(decl->body, en);
+        } catch(ReturnExcept* r) {
+            return r->value;
+        }
+        
         return NULL;
     }
 
     Function* decl;
+    Environment* closure;
 };

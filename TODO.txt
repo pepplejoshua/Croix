@@ -1,0 +1,2 @@
+[] add destructors to AST classes
+[] make sure environments are nesting properly
