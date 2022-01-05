@@ -1,0 +1,9 @@
+fun useLam(fn) {
+    fn(5);
+}
+
+// function definitions are Statements
+// lambda functions should be Expression type
+useLam(fun printer(x) {
+    print x;
+});

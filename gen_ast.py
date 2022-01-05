@@ -51,7 +51,8 @@ eclasses = [
         "Nil",
         "Variable",
         "Logical",
-        "Call"
+        "Call",
+        # "Lambda" # Callable Expr type
     ]
 
 mp = {
@@ -72,6 +73,7 @@ mp = {
         "Call": 'C',
         "Function": 'F',
         "Return": 'R',
+        # "Lambda": 'l'
     }
 
 # add top comments and include statements
@@ -94,6 +96,8 @@ def addTopOfFile(Cpp: CodeAssembler, baseClass: str, stmt=False):
     if stmt:
         Cpp.insert('#include "Expr.h"')
         Cpp.insert("#include <vector>")
+    # else:
+    #     Cpp.insert('#include "Stmt.h"')
     Cpp.insert()
     Cpp.insert("using namespace std;")
 
@@ -363,7 +367,8 @@ types = [
     f"Nil          :",
     f"Variable     :  Token name",
     f"Logical      : {baseClass}* left, Token op, {baseClass}* right",
-    f"Call         : Expr* callee, Token rParen, vector < Expr* > arguments"
+    f"Call         : Expr* callee, Token rParen, vector < Expr* > arguments",
+    # "Lambda        :  vector < Token > params, Block* body"
 ]
 generateExprHeaderForTypes(dest, baseClass, types)
 
@@ -378,6 +383,6 @@ sTypes = [
     "If             :  Expr* cond, Stmt* then, Stmt* else_",
     "While          :  Expr* cond, Stmt* body",
     "Function       :  Token fnName, vector < Token > params, Block* body",
-    "Return         :  Token ret, Expr* value"
+    "Return         :  Token ret, Expr* value",
 ]
 generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)

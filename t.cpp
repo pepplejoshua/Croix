@@ -13,9 +13,15 @@ T* test(T *t) {
     return t;
 }
 
-int main() {
-    T* res = test(new T());
-    cout << res->y << " " << res->x << endl;
+void scope(int a) {
+    int a = 5;
+    cout << a << endl;
+}
 
+int main() {
+    // T* res = test(new T());
+    // cout << res->y << " " << res->x << endl;
+
+    scope(200);
     return 0;
 }

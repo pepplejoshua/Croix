@@ -55,6 +55,8 @@ private:
     }   
 
     Stmt* funcDeclaration(string kind) {
+        // lambda expression
+        // if (match(LEFT_PAREN)) return lambdaDeclaration(kind);
         Token fnName = consume(IDENTIFIER, "Expected " + kind + " name.");
         vector < Token > params;
 
@@ -73,6 +75,24 @@ private:
         vector < Stmt* > body = block();
         return new Function(fnName, params, new Block(body));
     }
+
+    // Stmt* lambdaDeclaration(string kind) {
+    //     vector < Token > params;
+
+    //     if (!check(RIGHT_PAREN)) {
+    //         do {
+    //             if (params.size() >= 255) 
+    //                 error(peek(), "Cannot have more than 255 parameters.");
+
+    //             params.push_back(consume(IDENTIFIER, "Expected parameter name."));
+    //         } while (match(COMMA));
+    //     }
+    //     consume(RIGHT_PAREN, "Expected ')' after parameters.");
+
+    //     consume(LEFT_BRACE, "Expected '{' before " + kind + " body.");
+    //     vector < Stmt* > body = block();
+    //     return new Expression(new Lambda(params, new Block(body)));
+    // }
 
     Stmt* varDeclaration() {
         Token variableName = consume(IDENTIFIER, "Expected variable name.");
@@ -149,6 +169,7 @@ private:
         Stmt* body = statement();
 
         // desugar for loop into while loop in a block statement
+        // ? means optional
         // for (a?; b?; c?) d becomes:
         // {
         //      a?;
@@ -451,7 +472,7 @@ private:
         return e;
     }
 
-    Expr* buildCallExpr(Expr* callee) {
+    Expr* buildCallExpr(Expr* callable) {
         vector < Expr* > arguments;
 
         if (!check(RIGHT_PAREN)) { // we have arguments to pass to this call, process them
@@ -465,7 +486,7 @@ private:
 
         // use this closing operator to report errors
         Token op = consume(RIGHT_PAREN, "Expected ')' after arguments.");
-        return new Call(callee, op, arguments);
+        return new Call(callable, op, arguments);
     }
 
     Expr* primary() {

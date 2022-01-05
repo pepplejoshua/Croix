@@ -1,2 +1,5 @@
-[] add destructors to AST classes
-[] make sure environments are nesting properly
+[x] add destructors to AST classes
+[x] make sure environments are nesting properly
+[] implement lambda functions
+    - what happens when a lambda definition occurs in an expression statement
+[] disallow shadowing function parameters or redefining them (like in C++)

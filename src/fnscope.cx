@@ -1,0 +1,10 @@
+fun scope(a) {
+    var a = "local";
+    print a;
+}
+
+scope(200);
+
+var b = 200;
+var b = "c";
+print b;
