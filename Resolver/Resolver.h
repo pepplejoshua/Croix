@@ -9,11 +9,14 @@
 #include "../Helpers/ErrHandler.h"
 #include "../Interpreter/Interpreter.h"
 
+enum FunctionType { NONE, FUNCTION };
+
 class Resolver : public ExprVisitor<void>, public StmtVisitor<void> {
 public:
     Resolver(Interpreter* i, ErrHandler* handler) {
         interpreter = i;
         eHandler = handler;
+        currentFunctionType = NONE;
     }
 
     void visitVarStmt(Var* e) {
@@ -53,7 +56,7 @@ public:
     void visitFunctionStmt(Function* f) {
         declare(f->fnName);
         define(f->fnName);
-        resolveFunction(f);
+        resolveFunction(f, FUNCTION);
     }
 
     void visitExpressionStmt(Expression* e) {
@@ -74,6 +77,9 @@ public:
     }
     
     void visitReturnStmt(Return* e) {
+        if (currentFunctionType == NONE) {
+            eHandler->error(e->ret, "Can't return from top-level code.");
+        }
         if (e->value != NULL)
             resolve(e->value);
     }
@@ -133,9 +139,12 @@ private:
         if (scopeIsEmpty()) // global variable
             return;
         map < string, bool > &curScope = scopes.back();
+        // redeclaring a variable or name is an error        
+        if (containsKey(curScope, name.lexeme)) {
+            eHandler->error(name, "Variable with same name already exists in this scope.");
+        }
         // initialization is incomplete, awaiting resolve,
         // so it's set to false
-        // cout << name.lexeme << " declared\n";
         curScope.insert(pair< string, bool >(name.lexeme, false));
     }
 
@@ -167,7 +176,10 @@ private:
         }
     }
 
-    void resolveFunction(Function* f) {
+    void resolveFunction(Function* f, FunctionType funcType) {
+        FunctionType enclosingFunctionType = currentFunctionType;
+        currentFunctionType = funcType;
+
         enterScope();
         for (int i = 0; f->params.size() > i; ++i) {
             Token param = f->params[i];
@@ -176,6 +188,7 @@ private:
         }
         resolve(f->body);
         exitScope();
+        currentFunctionType = enclosingFunctionType;
     }
 
     // simulate the linked list created during runtime inside
@@ -203,8 +216,12 @@ private:
         return false;
     }
 
+    // used to check what type of function we are currently in
+    FunctionType currentFunctionType; 
+
     Interpreter* interpreter;
     ErrHandler* eHandler;
+    
     // a stack of Environment scopes
     // where an Environment is map < string, bool >
     vector < map < string, bool> > scopes;
