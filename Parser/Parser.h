@@ -45,6 +45,7 @@ private:
     // or it routes to statements
     Stmt* declaration() {
         try {
+            if (match(CLASS)) return classDeclaration();
             if (match(FUN)) return funcDeclaration("function");
             if (match(VAR)) return varDeclaration(); 
             return statement();
@@ -53,6 +54,24 @@ private:
             return NULL;
         }
     }   
+
+    Stmt* classDeclaration() {
+        Token name = consume(IDENTIFIER, "Expected class name.");
+
+        consume(LEFT_BRACE, "Expected '{' before class body.");
+        vector < Function* > methods;
+
+        while(!check(RIGHT_BRACE) && !isAtEnd()) {
+            Function* fn = dynamic_cast<Function *>(funcDeclaration("method"));
+            
+            if (fn != NULL) {
+                methods.push_back(fn);
+            }
+        }
+
+        consume(RIGHT_BRACE, "Expected '}' to terminate class body.");
+        return new Class(name, methods);
+    }
 
     Stmt* funcDeclaration(string kind) {
         // lambda expression

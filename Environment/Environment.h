@@ -57,8 +57,8 @@ public:
             stored.erase(key.lexeme);
             stored.insert(pair<string, Storable*>(key.lexeme, val));
             return;
-        }
-        
+        } 
+
         if (parent != NULL) {
             parent->assign(key, val); // check nested Environments
             return;

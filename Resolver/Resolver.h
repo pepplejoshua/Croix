@@ -27,6 +27,11 @@ public:
         define(e->name);
     }
 
+    void visitClassStmt(Class* c) {
+        declare(c->name);
+        define(c->name);
+    }
+
     void visitVariableExpr(Variable* e) {
         // there is some local scope, and the top scope contains the referenced name
         if(!scopeIsEmpty() && containsKey(scopes.back(), e->name.lexeme)) {

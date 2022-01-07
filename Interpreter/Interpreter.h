@@ -7,6 +7,7 @@
 #include "../AST/TokenTypes.h"
 #include "../AST/AstPrinter.h"
 #include "../AST/Callable.h"
+#include "../AST/Class.h"
 #include "../Helpers/ErrHandler.h"
 #include "../Environment/Environment.h"
 
@@ -413,8 +414,11 @@ public:
             if (v != NULL) {
                 if (v->storedType() == "Expr")
                     showExpr(dynamic_cast<Expr *>(v));   
-                else
+                else if (v->storedType() == "Callable")
                     cout << dynamic_cast<Callable *>(v)->toString() << endl;
+                else {
+                    cout << v->storedType() << endl;
+                }
             }
         } else {
             cout << endl;
@@ -462,6 +466,12 @@ public:
         if (e->value != NULL) rVal = eval(e->value);
 
         throw ReturnExcept(rVal);
+    }
+
+    void visitClassStmt(Class* c) {
+        env->define(c->name.lexeme, new Nil());
+        LoxClass* uc = new LoxClass(c->name.lexeme);
+        env->assign(c->name, uc);
     }
 
     void interpret(vector < Stmt* > stmts) {

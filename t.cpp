@@ -9,4 +9,11 @@ int main() {
         cout << "index " << i << " is " << a[i];
         cout << ", index " << i + 1 << " is " << a[i+1] << endl;
     }
+
+    int b = b;
+    // {
+    //     int b = b;
+    //     cout << b << endl;
+    // }
+    cout << b << endl;
 }

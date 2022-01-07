@@ -37,7 +37,8 @@ sclasses = [
         "If",
         "While",
         "Function",
-        "Return"
+        "Return", 
+        "Class"
     ]
 
 eclasses = [
@@ -73,6 +74,7 @@ mp = {
         "Call": 'C',
         "Function": 'F',
         "Return": 'R',
+        "Class": 'c'
         # "Lambda": 'l'
     }
 
@@ -372,7 +374,7 @@ types = [
     f"Call         : Expr* callee, Token rParen, vector < Expr* > arguments",
     # "Lambda        :  vector < Token > params, Block* body"
 ]
-generateExprHeaderForTypes(dest, baseClass, types)
+# generateExprHeaderForTypes(dest, baseClass, types)
 
 
 
@@ -386,5 +388,6 @@ sTypes = [
     "While          :  Expr* cond, Stmt* body",
     "Function       :  Token fnName, vector < Token > params, Block* body",
     "Return         :  Token ret, Expr* value",
+    "Class          :  Token name, vector < Function* > methods",
 ]
 generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)
