@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <vector>
+#include <map>
 #include "Expr.h"
 #include "../Environment/Environment.h"
 #include "../Interpreter/Interpreter.h"
@@ -17,6 +18,8 @@ public:
     AstPrinter pr;
     bool interacting;
     Environment* env;
+    Environment* globals;
+    map < Expr*, int > locals;
 };
 
 class Callable : public Storable {
@@ -76,8 +79,8 @@ public:
 
         try {
             in->executeBlock(decl->body, en);
-        } catch(ReturnExcept* r) {
-            return r->value;
+        } catch(ReturnExcept r) {
+            return r.value;
         }
         
         return NULL;

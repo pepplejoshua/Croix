@@ -113,26 +113,26 @@ bool areNumbersOrStrings(Token op, Expr *a, Expr *b) {
 
 class Interpreter : public CInterpreter {
 public:
-    Interpreter(ErrHandler* e, bool interactiveMode=false, Environment* pEnv=NULL) { 
+    Interpreter(ErrHandler* e, bool interactiveMode=false, Environment* globals=NULL) { 
         handler = e;
         interacting = interactiveMode;
 
-        if (pEnv)
-            env = pEnv;
+        if (globals)
+            env = globals;
         else
             env = new Environment(e);
 
-        env->define("clock", new Clock());
+        globals->define("clock", new Clock());
+        // used to help resolver integration
+        this->globals = globals;
+    }
+
+    void resolve(Expr* expr, int scopeDepth) {
+        locals.insert(pair < Expr*, int >(expr, scopeDepth));
     }
 
     Storable* eval(Expr* in) {
         return in->accept(this);
-    }
-
-    Storable* visitAssignExpr(Assign* e) {
-        Storable *v = eval(e->value);
-        env->assign(e->name, v);
-        return v;
     }
 
     Storable* visitBinaryExpr(Binary* e) {
@@ -314,8 +314,34 @@ public:
     }
 
     Storable* visitVariableExpr(Variable* e) {
-        Storable *v = env->get(e->name);
-        return v;    
+        // Storable *v = env->get(e->name);
+        // return v;    
+        return lookupVariable(e->name, e);
+    }
+
+    Storable* lookupVariable(Token name, Expr* e) {
+        map < Expr*, int >::iterator iDepth = locals.find(e);
+        // not recognized as a local variable, check globally
+        if (iDepth == locals.end()) {
+            return globals->get(name);
+        } else {
+            return env->getAtDepth(iDepth->second, name);
+        }
+    }
+
+    Storable* visitAssignExpr(Assign* e) {
+        Storable *v = eval(e->value);
+        
+        map < Expr*, int >::iterator iDepth = locals.find(e);
+        if (iDepth == locals.end()) {
+            globals->assign(e->name, v);
+        } else {
+            env->assignAtDepth(iDepth->second, e->name, v);
+        }
+
+        return v;
+        // env->assign(e->name, v);
+        // return v;
     }
 
     Storable* visitLogicalExpr(Logical* e) {
@@ -363,6 +389,13 @@ public:
             else
                 cout << pr.print(v) << endl;
         }
+    }
+
+    string getExprString(Expr* e) {
+        if (e) {
+            return pr.print(e);
+        }
+        return "";
     }
 
     void visitExpressionStmt(Expression* e) {
@@ -428,7 +461,7 @@ public:
         Storable* rVal = NULL;
         if (e->value != NULL) rVal = eval(e->value);
 
-        throw new ReturnExcept(rVal);
+        throw ReturnExcept(rVal);
     }
 
     void interpret(vector < Stmt* > stmts) {
@@ -445,26 +478,26 @@ public:
         s->accept(this);
     }
 
-void executeBlock(Block* e, Environment* scope) {
-    Environment* prev = env;
-    try {
-        // set new scope and execute statements in this scope
-        env = scope;
-        for (int i = 0; i < e->stmts.size(); ++i) {
-            execute(e->stmts[i]);
+    void executeBlock(Block* e, Environment* scope) {
+        Environment* prev = env;
+        try {
+            // set new scope and execute statements in this scope
+            env = scope;
+            for (int i = 0; i < e->stmts.size(); ++i) {
+                execute(e->stmts[i]);
+            }
+        } catch (RuntimeError& err) {
+            // even in the case of an error, reset env
+            env = prev;
+            throw err;
+        } catch (ReturnExcept r) { 
+            // cause of the dumbest/best 1 off error I have ever experienced in my life
+            // I forgot to reset the environment before returning higher up the nested 
+            // environment path. I fucking hate C++ pointers. Fuckkkkkkkkkkkkkkkkkkkkk
+            env = prev;
+            throw r;
         }
-    } catch (RuntimeError& err) {
-        // even in the case of an error, reset env
-        env = prev;
-        throw err;
-    } catch (ReturnExcept* r) { 
-        // cause of the dumbest/best 1 off error I have ever experienced in my life
-        // I forgot to reset the environment before returning higher up the nested 
-        // environment path. I fucking hate C++ pointers. Fuckkkkkkkkkkkkkkkkkkkkk
-        env = prev;
-        throw r;
-    }
 
-    env = prev;
-}
+        env = prev;
+    }
 };

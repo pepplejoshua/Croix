@@ -19,6 +19,7 @@
 #include "Parser/Parser.h"
 #include "Interpreter/Interpreter.h"
 #include "Environment/Environment.h"
+#include "Resolver/Resolver.h"
 
 using namespace std;
 
@@ -43,7 +44,6 @@ ErrHandler CroixErrManager;
 Environment env(&CroixErrManager);
 
 int main(int argc, const char * argv[]) {
-    // 34 + (- (2 ^ 3))
     if (hasCorrectArgCount(argc)) {
         if (argc == 2) // user provided a script
             runFile(argv[1]);
@@ -117,6 +117,14 @@ void run(string src, bool interact) {
         return;
 
     Interpreter in(&CroixErrManager, interact, &env);
+    Resolver res(&in, &CroixErrManager);
+    res.resolveStmts(stmts);
+
+    v = CroixErrManager.SOURCE_HAD_ERROR;
+
+    if (v) 
+        return;
+
     in.interpret(stmts);
 }
 

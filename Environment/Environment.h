@@ -35,6 +35,20 @@ public:
         throw RuntimeError(key, "Undefined variable reference '" + key.lexeme + "'.");
     }
 
+    Storable* getAtDepth(int distance, Token name) {
+        return visitAncestor(distance)->get(name);
+    }
+
+    Environment* visitAncestor(int distance) {
+        Environment* env = this;
+        // walk by specified distance to find 
+        // env at right depth
+        for (int i = 0; distance > i; ++i) {
+            env = env->parent;
+        }
+        return env;
+    }
+
     // for changing the value of a name, as long as it exists
     void assign(Token key, Storable* val) {
         Storable* found = find(key.lexeme);
@@ -51,6 +65,10 @@ public:
         }
         
         throw RuntimeError(key, "Undefined variable reference '" + key.lexeme + "'.");
+    }
+
+    void assignAtDepth(int distance, Token key, Storable* value) {
+        visitAncestor(distance)->assign(key, value);
     }
 
     Storable* find(string name) {

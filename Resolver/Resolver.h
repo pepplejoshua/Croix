@@ -1,5 +1,211 @@
 #pragma once
 
-class Resolver {
+#include <iostream>
+#include <map>
+#include <vector>
+#include "../AST/Expr.h"
+#include "../AST/Token.h"
+#include "../AST/Stmt.h"
+#include "../Helpers/ErrHandler.h"
+#include "../Interpreter/Interpreter.h"
 
+class Resolver : public ExprVisitor<void>, public StmtVisitor<void> {
+public:
+    Resolver(Interpreter* i, ErrHandler* handler) {
+        interpreter = i;
+        eHandler = handler;
+    }
+
+    void visitVarStmt(Var* e) {
+        declare(e->name);
+        if (e->initValue != NULL) {
+            resolve(e->initValue);
+        }
+        define(e->name);
+    }
+
+    void visitVariableExpr(Variable* e) {
+        // there is some local scope, and the top scope contains the referenced name
+        if(!scopeIsEmpty() && containsKey(scopes.back(), e->name.lexeme)) {
+            map < string, bool > scope = scopes.back();
+            // we have just referenced a declared but undefined name
+            // or a variable that is shadowing a variable in an outer scope
+            if (scope.at(e->name.lexeme) == false) { 
+                eHandler->error(e->name, "Can't reference local variable in its own initializer.");
+            }
+        }
+        resolveLocally(e, e->name);
+    }
+
+    void visitBlockStmt(Block* e) {
+        enterScope();
+        resolveStmts(e->stmts);
+        exitScope();
+    }
+
+    void visitAssignExpr(Assign* e) {
+        // handle RHS first
+        resolve(e->value);
+        // then handle variable name
+        resolveLocally(e, e->name);
+    }
+
+    void visitFunctionStmt(Function* f) {
+        declare(f->fnName);
+        define(f->fnName);
+        resolveFunction(f);
+    }
+
+    void visitExpressionStmt(Expression* e) {
+        resolve(e->expr);
+    }
+
+    void visitIfStmt(If* e) {
+        resolve(e->cond);
+        resolve(e->then);
+
+        if (e->else_ != NULL)
+            resolve(e->else_);
+    }
+
+    void visitPrintStmt(Print* e) {
+        if (e->expr != NULL)
+            resolve(e->expr);
+    }
+    
+    void visitReturnStmt(Return* e) {
+        if (e->value != NULL)
+            resolve(e->value);
+    }
+
+    void visitWhileStmt(While* w) {
+        resolve(w->cond);
+        resolve(w->body);
+    }
+
+    void visitBinaryExpr(Binary* b) {
+        resolve(b->left);
+        resolve(b->right);
+    }
+
+    void visitCallExpr(Call* c) {
+        resolve(c->callee);
+        for (int i = 0; c->arguments.size() > i; ++i) {
+            resolve(c->arguments[i]);
+        }
+    }
+
+    void visitGroupingExpr(Grouping* g) {
+        resolve(g->expr);
+    }
+
+    void visitBooleanExpr(Boolean* b) {
+        return;
+    }
+
+    void visitNumberExpr(Number* n) {
+        return;
+    }
+
+    void visitStringExpr(String* s) {
+        return;
+    }
+
+    void visitLogicalExpr(Logical* l) {
+        resolve(l->left);
+        resolve(l->right);
+    }
+
+    void visitUnaryExpr(Unary *u) {
+        resolve(u->right);
+    }
+
+    void visitNilExpr(Nil* e) { }
+
+    void resolveStmts(vector < Stmt* > stmts) {
+        for (int i = 0; stmts.size() > i; ++i) {
+            resolve(stmts[i]);
+        }
+    }
+
+private:
+    void declare(Token name) {
+        if (scopeIsEmpty()) // global variable
+            return;
+        map < string, bool > &curScope = scopes.back();
+        // initialization is incomplete, awaiting resolve,
+        // so it's set to false
+        // cout << name.lexeme << " declared\n";
+        curScope.insert(pair< string, bool >(name.lexeme, false));
+    }
+
+    void define(Token name) {
+        if (scopeIsEmpty()) // global variable
+            return;
+        map < string, bool > &curScope = scopes.back();
+        curScope.at(name.lexeme) = true; // successfully resolved
+        // cout << name.lexeme << " defined\n";
+    }
+
+    void resolve(Stmt* stmt) {
+        stmt->accept(this);
+    }
+
+    void resolve(Expr* e) {
+        e->accept(this);
+    }
+
+    void resolveLocally(Expr* e, Token name) {
+        for (int i = scopes.size() -1; i >= 0; --i) {
+            map < string, bool > scope = scopes[i];
+            if (containsKey(scope, name.lexeme)) {
+                // cout << "Resolving " << interpreter->getExprString(e) 
+                //     << " at depth " << scopes.size() - i - 1 << endl;
+                interpreter->resolve(e, scopes.size() - i - 1);
+                return;
+            }
+        }
+    }
+
+    void resolveFunction(Function* f) {
+        enterScope();
+        for (int i = 0; f->params.size() > i; ++i) {
+            Token param = f->params[i];
+            declare(param);
+            define(param);
+        }
+        resolve(f->body);
+        exitScope();
+    }
+
+    // simulate the linked list created during runtime inside
+    // interpreter, by stacking environments 
+    // (but not chained in a linked list)
+    void enterScope() {
+        map < string, bool > newScope;
+        scopes.push_back(newScope);
+    }
+
+    // pops top environment
+    void exitScope() {
+        scopes.pop_back();
+    }
+
+    bool scopeIsEmpty() {
+        return scopes.size() == 0;
+    }
+
+    bool containsKey(map < string, bool > scope, string name) {
+        map < string, bool >::iterator elem = scope.find(name);
+
+        if (elem != scope.end())
+            return true;
+        return false;
+    }
+
+    Interpreter* interpreter;
+    ErrHandler* eHandler;
+    // a stack of Environment scopes
+    // where an Environment is map < string, bool >
+    vector < map < string, bool> > scopes;
 };

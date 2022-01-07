@@ -3,3 +3,4 @@
 [] implement lambda functions
     - what happens when a lambda definition occurs in an expression statement
 [] disallow shadowing function parameters or redefining them (like in C++)
+[] learn Git branching and implement a feature through it, then merge
