@@ -1,0 +1,17 @@
+class Tester {
+    init(a, b) {
+        this.a = a; this.b = b;
+    }
+    showA() {
+        print this.a;
+    }
+    showB() {
+        print this.b;
+    }
+}
+
+var testr = Tester("Joshua", "Pepple");
+testr.showA(); testr.showB();
+
+testr.init(1, 2);
+testr.showA(); testr.showB();

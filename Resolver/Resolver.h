@@ -9,7 +9,8 @@
 #include "../Helpers/ErrHandler.h"
 #include "../Interpreter/Interpreter.h"
 
-enum FunctionType { NONE, FUNCTION, METHOD };
+enum FunctionType { NONE, FUNCTION, METHOD, INITIALIZER };
+enum ClassType { NOCLASS, SOMECLASS };
 
 class Resolver : public ExprVisitor<void>, public StmtVisitor<void> {
 public:
@@ -17,6 +18,7 @@ public:
         interpreter = i;
         eHandler = handler;
         currentFunctionType = NONE;
+        currentClassType = NOCLASS;
     }
 
     void visitVarStmt(Var* e) {
@@ -28,6 +30,8 @@ public:
     }
 
     void visitClassStmt(Class* c) {
+        ClassType enclosing = currentClassType;
+        currentClassType = SOMECLASS;
         declare(c->name);
         define(c->name);
 
@@ -36,9 +40,14 @@ public:
         scopes.back().insert(pair<string, bool>("this", true));
         // now handle resolving methods 
         for (int i = 0; c->methods.size() > i; ++i) {
-            resolveFunction(c->methods[i], METHOD);
+            FunctionType declaration = METHOD;
+            if (c->methods[i]->fnName.lexeme == "init") {
+                declaration = INITIALIZER;
+            }
+            resolveFunction(c->methods[i], declaration);
         }
         exitScope();
+        currentClassType = enclosing;
     }
 
     void visitVariableExpr(Variable* e) {
@@ -106,8 +115,14 @@ public:
         if (currentFunctionType == NONE) {
             eHandler->error(e->ret, "Can't return from top-level code.");
         }
-        if (e->value != NULL)
+        
+
+        if (e->value != NULL) {
+            if (currentFunctionType == INITIALIZER) {
+                eHandler->error(e->ret, "Can't return a value from inside an initializer.");
+            }
             resolve(e->value);
+        }
     }
 
     void visitWhileStmt(While* w) {
@@ -155,6 +170,10 @@ public:
     void visitNilExpr(Nil* e) { }
 
     void visitThisExpr(This* t) {
+        if (currentClassType == NOCLASS) {
+            eHandler->error(t->keyword, "Can't use 'this' outside of a class.");
+            return;
+        }
         resolveLocally(t, t->keyword);
     }
 
@@ -249,6 +268,7 @@ private:
 
     // used to check what type of function we are currently in
     FunctionType currentFunctionType; 
+    ClassType currentClassType;
 
     Interpreter* interpreter;
     ErrHandler* eHandler;

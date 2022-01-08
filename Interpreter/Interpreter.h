@@ -505,7 +505,8 @@ public:
         // map < string, Storable *> methods;
         for (int i = 0; c->methods.size() > i; ++i) {
             Function* fn = c->methods[i];
-            UserFunction* method = new UserFunction(fn, env);
+            bool isInit = fn->fnName.lexeme == "init";
+            UserFunction* method = new UserFunction(fn, env, isInit);
             // methods.insert(pair<string, Storable*>(fn->fnName.lexeme, method));
             methods->define(fn->fnName.lexeme, (Storable*) method);
         }

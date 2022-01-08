@@ -14,16 +14,27 @@ class CroixClass : public Callable {
 public:
     CroixClass(string name, Environment* methods) {
         cName = name;
-        // methods2 = methods;
         this->methods = methods;
     }
 
     Storable* call(CInterpreter* in, vector < Storable* > args) {
-        return new CroixClassInstance(this);
+        CroixClassInstance* instance = new CroixClassInstance(this);
+        UserFunction* init = dynamic_cast<UserFunction*>(methods->find("init"));
+        // some init function was provided
+        // so we bind it to instance to allow access to "this"
+        // then we call it to init fields as required
+        if (init != NULL) {
+            init->bind(instance)->call(in, args);
+        }
+        return instance;
     }
 
     int arity() {
-        return 0;
+        UserFunction* init = dynamic_cast<UserFunction*>(methods->find("init"));
+        if (init == NULL) {
+            return 0;
+        }
+        return init->arity();
     }   
 
     string toString() {
@@ -37,7 +48,6 @@ public:
             definition = loxclass;
             // allows fields to shadow method definitions
             fields = new Environment(NULL, definition->methods, true);
-        
         }
 
         string storedType() {
@@ -70,17 +80,13 @@ public:
         }
 
         void set(Token name, Storable* newVal) {
-            // fields2.insert(pair <string, Storable* >(name.lexeme, newVal));
             fields->define(name.lexeme, newVal);
         }
 
         CroixClass* definition;
-        // would an Environment be better for this?
         Environment* fields; 
-        // map < string, Storable *> fields2;
     };
 
     string cName;
     Environment* methods;
-    // map < string, Storable *> methods2;
 };

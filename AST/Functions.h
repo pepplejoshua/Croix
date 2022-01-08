@@ -26,9 +26,10 @@ class Clock : public NativeFn {
 
 class UserFunction : public Callable {
 public:
-    UserFunction(Function* decl, Environment* clos) {
+    UserFunction(Function* decl, Environment* clos, bool isInit=false) {
         this->decl = decl;
         this->closure = clos;
+        isInitializer = isInit;        
     }    
 
     int arity() {
@@ -51,7 +52,16 @@ public:
         try {
             in->executeBlock(decl->body, new Environment(closure->handler, en));
         } catch(ReturnExcept r) {
+            if (isInitializer) {
+                // should this be ->getAtDepth(0, Token("this"))
+                return closure->find("this");
+            }
             return r.value;
+        }
+
+        if (isInitializer) {
+            // should this be ->getAtDepth(0, Token("this"))
+            return closure->find("this");
         }
         
         return NULL;
@@ -60,9 +70,10 @@ public:
     UserFunction* bind(Storable* instance) {
         Environment* env = new Environment(NULL, closure, true);
         env->define("this", instance);
-        return new UserFunction(decl, env);
+        return new UserFunction(decl, env, isInitializer);
     }
 
     Function* decl;
     Environment* closure;
+    bool isInitializer;
 };
