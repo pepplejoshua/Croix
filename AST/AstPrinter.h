@@ -78,6 +78,14 @@ public:
         return parenthesize("fun " + print(e->callee), e->arguments);
     }
 
+    string visitGetExpr(Get* g) {
+        return print(g->object) + "." + g->name.lexeme;
+    }
+
+    string visitSetExpr(Set* s) {
+        return print(s->object) + "." + s->name.lexeme + " = " + print(s->value);
+    }
+
 private:
     string parenthesize(string tag, vector < Expr * > exprs) {
         string o = "";

@@ -1,0 +1,14 @@
+class Calc {
+    add(x, y) {
+        return x + y;
+    }
+}
+fun sub(a, b) {
+    return a - b;
+}
+
+var c = Calc();
+print c.add(2, 3);
+c.sub = sub;
+// not a method but a field
+print c.sub(300, 150);

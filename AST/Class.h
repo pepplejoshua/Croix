@@ -1,19 +1,24 @@
 #pragma once
+
 #include <iostream>
-#include <vector>
+#include <map>
 #include "Callable.h"
-// #include "Instance.h"
+#include "../Environment/Environment.h"
 
-class LoxClassInstance;
+using namespace std;
 
-class LoxClass : public Callable {
+class CroixClassInstance;
+
+class CroixClass : public Callable {
 public:
-    LoxClass(string name) {
+    CroixClass(string name, Environment* methods) {
         cName = name;
+        // methods2 = methods;
+        this->methods = methods;
     }
 
     Storable* call(CInterpreter* in, vector < Storable* > args) {
-        return new LoxClassInstance(this);
+        return new CroixClassInstance(this);
     }
 
     int arity() {
@@ -25,18 +30,46 @@ public:
     }
     
     // I despise C++ for this
-    class LoxClassInstance : public Storable {
+    class CroixClassInstance : public Storable {
     public:
-        LoxClassInstance(LoxClass* loxclass) {
+        CroixClassInstance(CroixClass* loxclass) {
             definition = loxclass;
+            // allows fields to shadow method definitions
+            fields = new Environment(NULL, definition->methods, true);
         }
 
         string storedType() {
             return "<" + definition->cName + " instance>";
         }
 
-        LoxClass* definition;
+        Storable* get(Token name) {
+            Storable* match = fields->get(name);
+            // map < string, Storable * >::iterator found = fields2.find(name.lexeme);
+
+            // if (found != fields2.end())
+            //     return found->second;
+            
+            // found = definition->methods2.find(name.lexeme);
+            
+            // if (found != definition->methods2.end())
+            //     return found->second;
+
+            // throw RuntimeError(name, "Undefined property " + name.lexeme + ".");
+            return match;
+        }
+
+        void set(Token name, Storable* newVal) {
+            // fields2.insert(pair <string, Storable* >(name.lexeme, newVal));
+            fields->define(name.lexeme, newVal);
+        }
+
+        CroixClass* definition;
+        // would an Environment be better for this?
+        Environment* fields; 
+        // map < string, Storable *> fields2;
     };
 
     string cName;
+    Environment* methods;
+    // map < string, Storable *> methods2;
 };

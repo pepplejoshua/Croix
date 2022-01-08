@@ -53,6 +53,8 @@ eclasses = [
         "Variable",
         "Logical",
         "Call",
+        "Get",
+        "Set",
         # "Lambda" # Callable Expr type
     ]
 
@@ -74,7 +76,9 @@ mp = {
         "Call": 'C',
         "Function": 'F',
         "Return": 'R',
-        "Class": 'c'
+        "Class": 'c',
+        "Get": 'g',
+        "Set": 'S',
         # "Lambda": 'l'
     }
 
@@ -372,9 +376,11 @@ types = [
     f"Variable     :  Token name",
     f"Logical      : {baseClass}* left, Token op, {baseClass}* right",
     f"Call         : Expr* callee, Token rParen, vector < Expr* > arguments",
+    f"Get          : Expr* object, Token name",
+    f"Set          : Expr* object, Token name, Expr* value",
     # "Lambda        :  vector < Token > params, Block* body"
 ]
-# generateExprHeaderForTypes(dest, baseClass, types)
+generateExprHeaderForTypes(dest, baseClass, types)
 
 
 
@@ -390,4 +396,4 @@ sTypes = [
     "Return         :  Token ret, Expr* value",
     "Class          :  Token name, vector < Function* > methods",
 ]
-generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)
+# generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)

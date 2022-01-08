@@ -289,6 +289,10 @@ private:
 
     // handles the modification of variables
     Expr* assignment() {
+        // get the target of the assignment
+        // could be:
+        // variable: a = someStuff;
+        // get: a.field = someStuff;
         Expr* target = or_();
 
         if (match(EQUAL)) { // we are assigning
@@ -296,9 +300,20 @@ private:
             Expr* v = assignment();
 
             switch(target->type()) {
+                //  regular variable
                 case 'v': {
                     Token varName = dynamic_cast<Variable *>(target)->name; 
                     return new Assign(varName, v);
+                    break;
+                }
+                // setting a field gotten from a class instance
+                case 'g': {
+                    Get* g = dynamic_cast<Get *>(target);
+                    // TODO: a set could be rewritten as:
+                    // Set(Get g, Expr* newValue) vs
+                    // Set(Expr* obj, Token name, Expr* newValue)
+                    // as Get already contains both obj and name
+                    return new Set(g->object, g->name, v);
                     break;
                 }
                 default: {
@@ -477,17 +492,21 @@ private:
     Expr* call() {
         Expr* e = primary();
 
-        while (match(LEFT_PAREN)) {
-            e = buildCallExpr(e);
-        }
+        // while (match(LEFT_PAREN)) {
+        //     e = buildCallExpr(e);
+        // }
 
         // Nystrom's version
-        // while (true) {
-        //     if (match(LEFT_PAREN))
-        //         e = buildCallExpr(e);
-        //     else
-        //         break;
-        // }
+        while (true) {
+            if (match(LEFT_PAREN))
+                e = buildCallExpr(e);
+            else if (match(DOT)) {
+                Token name = consume(IDENTIFIER, "Expected property name after '.'");
+                e = new Get(e, name);
+            }
+            else
+                break;
+        }
         return e;
     }
 

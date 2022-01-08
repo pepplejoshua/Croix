@@ -383,6 +383,31 @@ public:
         return res;    
     }
 
+    Storable* visitGetExpr(Get* g) {
+        Storable* lhs = eval(g->object);
+
+        CroixClass::CroixClassInstance* inst = dynamic_cast<CroixClass::CroixClassInstance*>(lhs);
+
+        if (inst != NULL) {
+            return inst->get(g->name);
+        }
+
+        throw RuntimeError(g->name, "Only class instances have properties.");
+    }
+
+    Storable* visitSetExpr(Set* s) {
+        Storable* lhs = eval(s->object);
+
+        CroixClass::CroixClassInstance* inst = dynamic_cast<CroixClass::CroixClassInstance*>(lhs);
+
+        if (inst == NULL) {
+            throw RuntimeError(s->name, "Only class instances have properties.");
+        }
+        Storable* newVal = eval(s->value);
+        inst->set(s->name, newVal);        
+        return newVal;
+    }
+
     void showExpr(Expr* v) {
         if (v) {
             if (interacting)
@@ -470,7 +495,17 @@ public:
 
     void visitClassStmt(Class* c) {
         env->define(c->name.lexeme, new Nil());
-        LoxClass* uc = new LoxClass(c->name.lexeme);
+        
+        Environment* methods = new Environment(NULL, NULL, true);
+        // map < string, Storable *> methods;
+        for (int i = 0; c->methods.size() > i; ++i) {
+            Function* fn = c->methods[i];
+            UserFunction* method = new UserFunction(fn, env);
+            // methods.insert(pair<string, Storable*>(fn->fnName.lexeme, method));
+            methods->define(fn->fnName.lexeme, method);
+        }
+
+        CroixClass* uc = new CroixClass(c->name.lexeme, methods);
         env->assign(c->name, uc);
     }
 

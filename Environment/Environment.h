@@ -9,9 +9,10 @@ using namespace std;
 
 class Environment {
 public:
-    Environment(ErrHandler* h, Environment* par=NULL) {
+    Environment(ErrHandler* h, Environment* par=NULL, bool classEnv=false) {
         handler = h;
         parent = par;
+        isClassEnv = classEnv;
     }
 
     // defining an identifier in the current scope
@@ -32,10 +33,16 @@ public:
         if (parent != NULL)
             return parent->get(key); // check nested Environments
 
-        throw RuntimeError(key, "Undefined variable reference '" + key.lexeme + "'.");
+        if (isClassEnv) {
+            throw RuntimeError(key, "Undefined property reference '" + key.lexeme + "'.");
+        }
+        else {
+            throw RuntimeError(key, "Undefined variable reference '" + key.lexeme + "'.");
+        }
     }
 
     Storable* getAtDepth(int distance, Token name) {
+        // cout << "finding at " << distance << " for " << name.lexeme << endl;
         return visitAncestor(distance)->get(name);
     }
 
@@ -64,7 +71,10 @@ public:
             return;
         }
         
-        throw RuntimeError(key, "Undefined variable reference '" + key.lexeme + "'.");
+        if (isClassEnv)
+            throw RuntimeError(key, "Undefined property reference '" + key.lexeme + "'.");
+        else
+            throw RuntimeError(key, "Undefined variable reference '" + key.lexeme + "'.");
     }
 
     void assignAtDepth(int distance, Token key, Storable* value) {
@@ -80,8 +90,8 @@ public:
         return NULL;            
     }
 
-private:
     ErrHandler* handler;
     map < string, Storable* > stored;
     Environment* parent;
+    bool isClassEnv;
 };

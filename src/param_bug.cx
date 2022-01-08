@@ -1,0 +1,9 @@
+fun test(a) {
+    var c = 2;
+    print c;
+    print b;
+    print a;
+}
+
+var b = 2;
+test(4);

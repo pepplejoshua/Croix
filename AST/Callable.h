@@ -70,7 +70,6 @@ public:
     Storable* call(CInterpreter* in, vector < Storable* > args) {
         Environment* en = new Environment(in->handler, closure);
         for (int i = 0; i < decl->params.size(); ++i) {
-            // cout << en << endl;
             // cout << decl->params[i].lexeme << endl;
             // cout << dynamic_cast<Number*>(args[i])->value << endl;
             // cout << endl;
@@ -78,7 +77,7 @@ public:
         }
 
         try {
-            in->executeBlock(decl->body, en);
+            in->executeBlock(decl->body, new Environment(closure->handler, en));
         } catch(ReturnExcept r) {
             return r.value;
         }

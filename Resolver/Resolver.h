@@ -9,7 +9,7 @@
 #include "../Helpers/ErrHandler.h"
 #include "../Interpreter/Interpreter.h"
 
-enum FunctionType { NONE, FUNCTION };
+enum FunctionType { NONE, FUNCTION, METHOD };
 
 class Resolver : public ExprVisitor<void>, public StmtVisitor<void> {
 public:
@@ -30,6 +30,11 @@ public:
     void visitClassStmt(Class* c) {
         declare(c->name);
         define(c->name);
+
+        // now handle resolving methods 
+        for (int i = 0; c->methods.size() > i; ++i) {
+            resolveFunction(c->methods[i], METHOD);
+        }
     }
 
     void visitVariableExpr(Variable* e) {
@@ -56,6 +61,18 @@ public:
         resolve(e->value);
         // then handle variable name
         resolveLocally(e, e->name);
+    }
+
+    void visitGetExpr(Get* g) {
+        // we only resolve the lhs of the dot
+        // since methods are dynamically handled at runtime
+        // we leave the name resolved, till runtime
+        resolve(g->object);
+    }
+
+    void visitSetExpr(Set* s) {
+        resolve(s->object);
+        resolve(s->value);
     }
 
     void visitFunctionStmt(Function* f) {
@@ -175,6 +192,7 @@ private:
             if (containsKey(scope, name.lexeme)) {
                 // cout << "Resolving " << interpreter->getExprString(e) 
                 //     << " at depth " << scopes.size() - i - 1 << endl;
+                // cout << "total len is " << scopes.size() << endl << endl;
                 interpreter->resolve(e, scopes.size() - i - 1);
                 return;
             }
