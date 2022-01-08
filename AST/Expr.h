@@ -27,6 +27,7 @@ class Logical;
 class Call;
 class Get;
 class Set;
+class This;
 
 // class to be inherited by abstract base class
 // to allow the template defined types visit this class
@@ -57,6 +58,7 @@ public:
     virtual ReturnValue visitCallExpr(Call*) = 0;
     virtual ReturnValue visitGetExpr(Get*) = 0;
     virtual ReturnValue visitSetExpr(Set*) = 0;
+    virtual ReturnValue visitThisExpr(This*) = 0;
 };
 
 // used by Environment to store both Exprs
@@ -475,4 +477,32 @@ public:
     Expr* object;
     Token name;
     Expr* value;
+};
+
+class This : public Expr {
+public:
+    This(Token keyword) {
+        this->keyword = keyword;
+    }
+    
+    ~This() {
+    }
+    
+    string accept(ExprVisitor< string >* ev) {
+        return ev->visitThisExpr(this);
+    }
+    
+    Storable * accept(ExprVisitor< Storable * >* ev) {
+        return ev->visitThisExpr(this);
+    }
+    
+    void accept(ExprVisitor< void >* ev) {
+        ev->visitThisExpr(this);
+    }
+    
+    char type() const {
+        return 'T';
+    }
+
+    Token keyword;
 };

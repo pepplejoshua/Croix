@@ -86,6 +86,10 @@ public:
         return print(s->object) + "." + s->name.lexeme + " = " + print(s->value);
     }
 
+    string visitThisExpr(This* t) {
+        return t->keyword.lexeme;
+    }
+
 private:
     string parenthesize(string tag, vector < Expr * > exprs) {
         string o = "";

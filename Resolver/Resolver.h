@@ -31,10 +31,14 @@ public:
         declare(c->name);
         define(c->name);
 
+        // scope used to capture "this" variable
+        enterScope();
+        scopes.back().insert(pair<string, bool>("this", true));
         // now handle resolving methods 
         for (int i = 0; c->methods.size() > i; ++i) {
             resolveFunction(c->methods[i], METHOD);
         }
+        exitScope();
     }
 
     void visitVariableExpr(Variable* e) {
@@ -149,6 +153,10 @@ public:
     }
 
     void visitNilExpr(Nil* e) { }
+
+    void visitThisExpr(This* t) {
+        resolveLocally(t, t->keyword);
+    }
 
     void resolveStmts(vector < Stmt* > stmts) {
         for (int i = 0; stmts.size() > i; ++i) {

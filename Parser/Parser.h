@@ -570,6 +570,11 @@ private:
                 return new Variable(previous()); // get the identifier
                 break;
             }
+            case THIS: {
+                advanceIndex();
+                return new This(previous());
+                break;
+            }
             default: {
                 throw error(peek(), "Expected expression, got " + peek().lexeme + ".");
             }

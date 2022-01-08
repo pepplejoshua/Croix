@@ -3,6 +3,7 @@
 #include <iostream>
 #include <map>
 #include "Callable.h"
+#include "Functions.h"
 #include "../Environment/Environment.h"
 
 using namespace std;
@@ -36,6 +37,7 @@ public:
             definition = loxclass;
             // allows fields to shadow method definitions
             fields = new Environment(NULL, definition->methods, true);
+        
         }
 
         string storedType() {
@@ -44,6 +46,15 @@ public:
 
         Storable* get(Token name) {
             Storable* match = fields->get(name);
+            
+            // we have found a method
+            if (match->storedType() == "Callable") {
+                UserFunction* method = dynamic_cast<UserFunction*>(match);
+                if (method != NULL) {
+                   return (Storable*) method->bind(this);
+                }
+            }
+            // Environment* methods = definition->methods;
             // map < string, Storable * >::iterator found = fields2.find(name.lexeme);
 
             // if (found != fields2.end())

@@ -55,6 +55,7 @@ eclasses = [
         "Call",
         "Get",
         "Set",
+        "This",
         # "Lambda" # Callable Expr type
     ]
 
@@ -79,6 +80,7 @@ mp = {
         "Class": 'c',
         "Get": 'g',
         "Set": 'S',
+        "This": "T",
         # "Lambda": 'l'
     }
 
@@ -378,6 +380,7 @@ types = [
     f"Call         : Expr* callee, Token rParen, vector < Expr* > arguments",
     f"Get          : Expr* object, Token name",
     f"Set          : Expr* object, Token name, Expr* value",
+    f"This         : Token keyword",
     # "Lambda        :  vector < Token > params, Block* body"
 ]
 generateExprHeaderForTypes(dest, baseClass, types)

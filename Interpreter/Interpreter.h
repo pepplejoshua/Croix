@@ -8,6 +8,7 @@
 #include "../AST/AstPrinter.h"
 #include "../AST/Callable.h"
 #include "../AST/Class.h"
+#include "../AST/Functions.h"
 #include "../Helpers/ErrHandler.h"
 #include "../Environment/Environment.h"
 
@@ -123,7 +124,7 @@ public:
         else
             env = new Environment(e);
 
-        globals->define("clock", new Clock());
+        globals->define("clock", (Storable*) new Clock());
         // used to help resolver integration
         this->globals = globals;
     }
@@ -408,6 +409,10 @@ public:
         return newVal;
     }
 
+    Storable* visitThisExpr(This* t) {
+        return lookupVariable(t->keyword, t);
+    }
+
     void showExpr(Expr* v) {
         if (v) {
             if (interacting)
@@ -483,7 +488,7 @@ public:
 
     void visitFunctionStmt(Function* e) {
         UserFunction* f = new UserFunction(e, env);
-        env->define(e->fnName.lexeme, f);
+        env->define(e->fnName.lexeme, (Storable*) f);
     }
 
     void visitReturnStmt(Return* e) {
@@ -502,11 +507,11 @@ public:
             Function* fn = c->methods[i];
             UserFunction* method = new UserFunction(fn, env);
             // methods.insert(pair<string, Storable*>(fn->fnName.lexeme, method));
-            methods->define(fn->fnName.lexeme, method);
+            methods->define(fn->fnName.lexeme, (Storable*) method);
         }
 
         CroixClass* uc = new CroixClass(c->name.lexeme, methods);
-        env->assign(c->name, uc);
+        env->assign(c->name, (Storable*) uc);
     }
 
     void interpret(vector < Stmt* > stmts) {
