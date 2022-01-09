@@ -413,6 +413,18 @@ public:
         return lookupVariable(t->keyword, t);
     }
 
+    Storable* visitSuperExpr(Super* s) {
+        // ASSUMPTION: that depth will always resolve correctly
+        int depth = locals[s];
+
+        CroixClass* superclass = (CroixClass*) env->getAtDepth(depth, s->keyword);
+        Storable* child = env->getAtDepth(depth - 1, Token(THIS, "this", s->keyword.line));
+
+        UserFunction* method = (UserFunction*) superclass->methods->get(s->property);
+
+        return method->bind(child);
+    }
+
     void showExpr(Expr* v) {
         if (v) {
             if (interacting)
@@ -499,19 +511,47 @@ public:
     }
 
     void visitClassStmt(Class* c) {
+        Storable* super = NULL;
+        CroixClass* superclass = NULL;
+        if (c->superclass != NULL) {
+            super = eval(c->superclass);
+            // check to see if super is resolved into a CroixClass
+            superclass = dynamic_cast<CroixClass*>(super);
+
+            if (superclass == NULL) {
+                throw RuntimeError(c->superclass->name, "Superclass must be a class");
+            }
+        }
+
+        // allows class to refer to itself
         env->define(c->name.lexeme, new Nil());
-        
+
+        if (c->superclass != NULL) {
+            env = new Environment(env->handler, env, true);
+            env->define("super", superclass);
+        }
+
         Environment* methods = new Environment(NULL, NULL, true);
         // map < string, Storable *> methods;
         for (int i = 0; c->methods.size() > i; ++i) {
             Function* fn = c->methods[i];
             bool isInit = fn->fnName.lexeme == "init";
+
+            // in the case where we have a superclass, all methods in our class
+            // capture the env that has a reference to "super"
+            // and then we later pop it off
             UserFunction* method = new UserFunction(fn, env, isInit);
             // methods.insert(pair<string, Storable*>(fn->fnName.lexeme, method));
             methods->define(fn->fnName.lexeme, (Storable*) method);
         }
 
-        CroixClass* uc = new CroixClass(c->name.lexeme, methods);
+        CroixClass* uc = new CroixClass(c->name.lexeme, superclass, methods);
+        
+        // after letting methods bind to env with reference to super,
+        // we pop off that env and return to its parent.
+        if (superclass != NULL) {
+            env = env->parent;
+        }
         env->assign(c->name, (Storable*) uc);
     }
 

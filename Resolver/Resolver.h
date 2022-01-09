@@ -10,7 +10,7 @@
 #include "../Interpreter/Interpreter.h"
 
 enum FunctionType { NONE, FUNCTION, METHOD, INITIALIZER };
-enum ClassType { NOCLASS, SOMECLASS };
+enum ClassType { NOCLASS, SOMECLASS, SUBCLASS };
 
 class Resolver : public ExprVisitor<void>, public StmtVisitor<void> {
 public:
@@ -35,6 +35,24 @@ public:
         declare(c->name);
         define(c->name);
 
+        // make sure class is not inheriting from itself
+        if (c->superclass != NULL && 
+            c->name.lexeme == c->superclass->name.lexeme) {
+                eHandler->error(c->superclass->name, "A class cannot inherit from itself.");
+        }
+
+        // if class is inheriting another class
+        if (c->superclass != NULL) {
+            currentClassType = SUBCLASS;
+            resolve(c->superclass);
+        }
+
+        // statically resolve super before methods are bound
+        if (c->superclass != NULL) {
+            enterScope();
+            scopes.back().insert(pair<string, bool>("super", true));
+        }
+
         // scope used to capture "this" variable
         enterScope();
         scopes.back().insert(pair<string, bool>("this", true));
@@ -47,6 +65,8 @@ public:
             resolveFunction(c->methods[i], declaration);
         }
         exitScope();
+        if (c->superclass != NULL) 
+            exitScope();
         currentClassType = enclosing;
     }
 
@@ -175,6 +195,16 @@ public:
             return;
         }
         resolveLocally(t, t->keyword);
+    }
+
+    void visitSuperExpr(Super* s) {
+        if (currentClassType == NOCLASS) {
+            eHandler->error(s->keyword, "Can't use 'super' outside a class.");
+        } else if (currentClassType != SUBCLASS) {
+            eHandler->error(s->keyword, "Can't use 'super' in a class with no superclass.");
+        }
+        // resolve the "super" part
+        resolveLocally(s, s->keyword);
     }
 
     void resolveStmts(vector < Stmt* > stmts) {

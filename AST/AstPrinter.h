@@ -90,6 +90,10 @@ public:
         return t->keyword.lexeme;
     }
 
+    string visitSuperExpr(Super* s) {
+        return s->keyword.lexeme + "." + s->property.lexeme;
+    }
+
 private:
     string parenthesize(string tag, vector < Expr * > exprs) {
         string o = "";

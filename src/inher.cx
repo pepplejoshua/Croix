@@ -1,0 +1,13 @@
+class Donut {
+    cook() {
+        print "Fry until golden brown";
+    }
+}
+class HoneyGlazed < Donut {
+    cook() {
+        super.cook(); // calls Donut.cook()
+        print "Dunk in glaze mix and coat donut";
+    }
+}
+var donut = HoneyGlazed();
+donut.cook();

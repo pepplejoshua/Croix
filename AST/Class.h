@@ -12,9 +12,10 @@ class CroixClassInstance;
 
 class CroixClass : public Callable {
 public:
-    CroixClass(string name, Environment* methods) {
+    CroixClass(string name, CroixClass* super, Environment* methods) {
         cName = name;
         this->methods = methods;
+        superclass = super;
     }
 
     Storable* call(CInterpreter* in, vector < Storable* > args) {
@@ -46,8 +47,24 @@ public:
     public:
         CroixClassInstance(CroixClass* loxclass) {
             definition = loxclass;
+
+            // instead of using Bob's method of findMethod(),
+            // i make an instance of the superclass and link both environments
+            CroixClassInstance* superInst = NULL;
+
+            // make an instance of superclass
+            if (definition->superclass != NULL) {
+                superInst = new CroixClassInstance(definition->superclass);
+            }
+
             // allows fields to shadow method definitions
             fields = new Environment(NULL, definition->methods, true);
+            // continue the Environment chain by linking methods of child class to
+            // methods Environment of its parent
+            // 
+            if (superInst != NULL) {
+                definition->methods->parent = superInst->definition->methods;
+            }   
         }
 
         string storedType() {
@@ -89,4 +106,5 @@ public:
 
     string cName;
     Environment* methods;
+    CroixClass* superclass;
 };

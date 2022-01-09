@@ -56,6 +56,7 @@ eclasses = [
         "Get",
         "Set",
         "This",
+        "Super",
         # "Lambda" # Callable Expr type
     ]
 
@@ -80,7 +81,8 @@ mp = {
         "Class": 'c',
         "Get": 'g',
         "Set": 'S',
-        "This": "T",
+        "This": 'T',
+        "Super": 'p',
         # "Lambda": 'l'
     }
 
@@ -381,6 +383,7 @@ types = [
     f"Get          : Expr* object, Token name",
     f"Set          : Expr* object, Token name, Expr* value",
     f"This         : Token keyword",
+    f"Super        : Token keyword, Token property",
     # "Lambda        :  vector < Token > params, Block* body"
 ]
 generateExprHeaderForTypes(dest, baseClass, types)
@@ -397,6 +400,6 @@ sTypes = [
     "While          :  Expr* cond, Stmt* body",
     "Function       :  Token fnName, vector < Token > params, Block* body",
     "Return         :  Token ret, Expr* value",
-    "Class          :  Token name, vector < Function* > methods",
+    "Class          :  Token name, Variable* superclass, vector < Function* > methods",
 ]
 # generateStmtHeaderForTypes(dest, stmtBaseClass, sTypes)

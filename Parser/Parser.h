@@ -57,6 +57,14 @@ private:
 
     Stmt* classDeclaration() {
         Token name = consume(IDENTIFIER, "Expected class name.");
+        
+        Variable* superclass = NULL;
+        
+        // we are inheriting from someone
+        if (match(LESS)) {
+            consume(IDENTIFIER, "Expected superclass name.");
+            superclass = new Variable(previous());
+        }
 
         consume(LEFT_BRACE, "Expected '{' before class body.");
         vector < Function* > methods;
@@ -70,7 +78,7 @@ private:
         }
 
         consume(RIGHT_BRACE, "Expected '}' to terminate class body.");
-        return new Class(name, methods);
+        return new Class(name, superclass, methods);
     }
 
     Stmt* funcDeclaration(string kind) {
@@ -573,6 +581,14 @@ private:
             case THIS: {
                 advanceIndex();
                 return new This(previous());
+                break;
+            }
+            case SUPER: {
+                advanceIndex();
+                Token keyword = previous();
+                consume(DOT, "Expected '.' after 'super'.");
+                Token prop = consume(IDENTIFIER, "Expected superclass property name.");
+                return new Super(keyword, prop);
                 break;
             }
             default: {
